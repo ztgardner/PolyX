@@ -26,3 +26,8 @@ def make_itp(path_toPDB, name, charge=0):
 
     move_gro_PDB_and_itp_command= f"mv {os.path.join(path_toPDB, 'Delete',f'Base.gmx.itp {path_toPDB}/{name}.itp')} && rm -rf {path_toPDB}/Delete"
     subprocess.run(move_gro_PDB_and_itp_command,shell=True,check=True)
+    return os.path.join(path_toPDB, f'{name}.itp')
+
+
+list=[1,2]
+print(list.index(3))
