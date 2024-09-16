@@ -28,6 +28,3 @@ def make_itp(path_toPDB, name, charge=0):
     subprocess.run(move_gro_PDB_and_itp_command,shell=True,check=True)
     return os.path.join(path_toPDB, f'{name}.itp')
 
-
-list=[1,2]
-print(list.index(3))
