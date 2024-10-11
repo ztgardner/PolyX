@@ -3,73 +3,23 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from itp_parser import *
-dh1 = [5,6,7,10]		# What is the first dihedral?
-dh2 = [10,11,12,15]		# What is the second dihedral?
+
+dh1 = input("first dihedral, input as a,b,c,d: ").split(",") #[5,6,7,10]		# What is the first dihedral?
+dh1=[int(i) for i in dh1]
+dh2 = input("second dihedral, input as a,b,c,d: ").split(",")#[10,11,12,15]		# What is the second dihedral?
+dh2=[int(i) for i in dh2]
 itp_file_path = 'polymer.itp'
-n = 5
-#data= Itp_parser(File=itp_file_path)
-def parse_itp_file(file_path):
-    data = {}
-    current_section = None
-    with open(file_path, 'r') as file:
-        for line in file:
-            line = line.strip()
-            if line.startswith(';') or not line:
-                continue
-            elif line.startswith('[') and line.endswith(']'):
-                current_section = line[1:-1].strip()
-                data[current_section] = []
-                if current_section in ['angles', 'moleculetype', 'atoms']:
-                    next(file)  # Skip one line for certain sections
-            else:
-                line_data = line.split(';')[0].strip()
-                if line_data:
-                    if current_section == 'dihedrals':
-                        if 'IMPROPER DIHEDRAL' in line_data:
-                            next(file)  # Skip the next line for improper dihedrals
-                            continue
-                        elif 'PROPER DIHEDRAL' in line_data:
-                            next(file)  # Skip the next line for proper dihedrals
-                            continue
-                    data[current_section].append(line_data.split())
-    return data
+n = int(input("how many iterations: "))
+print(dh2)
+print(dh1)
 
-def process_dihedrals_sections(file_path):
-    improper_data = []
-    proper_data = []
-    with open(file_path, 'r') as file:
-        section_flag = None  # Tracks the current section
-        dihedrals_flag = False  # Flag to indicate dihedrals section
-        section_type = None  # Tracks the type of dihedrals section
-        for line in file:
-            line = line.strip()
-            if line.startswith('[ dihedrals ]'):
-                dihedrals_flag = True
-            elif dihedrals_flag and line.startswith('; IMPROPER DIHEDRAL ANGLES'):
-                section_flag = 'improper'
-                section_type = 'Improper Dihedrals'
-            elif dihedrals_flag and line.startswith('; PROPER DIHEDRAL ANGLES'):
-                section_flag = 'proper'
-                section_type = 'Proper Dihedrals'
-            elif '[ pairs ]' in line:
-                break  # Stop collecting data after encountering [ pairs ]
-            elif section_flag == 'improper' and line.strip() and not line.startswith(';'):
-                improper_data.append(line.split())
-            elif section_flag == 'proper' and line.strip() and not line.startswith(';'):
-                proper_data.append(line.split())
-
-    # Convert data to dataframes
-    df_improper = pd.DataFrame(improper_data, columns=['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2'])
-    df_proper = pd.DataFrame(proper_data, columns=['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'])
-
-    return df_improper, df_proper
-
-def update_nmer_using_graph(df_atoms, df_bonds, dihedral_centers):
+def update_nmer_using_graph(df_atoms, bonds,dihedral_centers):
     G = nx.Graph()
 
     # Add edges from bonds
-    for _, row in df_bonds.iterrows():
-        G.add_edge(int(row['ai']), int(row['aj']))
+    for lines in bonds:
+        cur_line=lines.split()
+        G.add_edge(int(cur_line[0]),int(cur_line[1]))
 
     # Identify components
     for dihedral_center in dihedral_centers:
@@ -89,22 +39,24 @@ def update_nmer_using_graph(df_atoms, df_bonds, dihedral_centers):
 # Example usage
 
 dihedral_centers = [(dh1[1], dh1[2]), (dh2[1], dh2[2])]
-parsed_data = parse_itp_file(itp_file_path)
-df_improper, df_proper = process_dihedrals_sections(itp_file_path)
+ITP = Itp_parser(File=itp_file_path)
+improper_dihedral=ITP["Ryckaert-Bellemans dihedral"]
+proper_dihedral = ITP["improper_dihedral"]
 
 # Convert each section to a DataFrame
-df_atomtypes = pd.DataFrame(parsed_data.get('atomtypes', []), columns=['type', 'type_name', 'mass', 'charge', 'element', 'sigma', 'epsilon'])
-df_moleculetype = pd.DataFrame(parsed_data.get('moleculetype', []), columns=['name', 'nrexcl'])
-df_atoms = pd.DataFrame(parsed_data.get('atoms', []), columns=['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass'])
-df_bonds = pd.DataFrame(parsed_data.get('bonds', []), columns=['ai', 'aj', 'funct', 'c0', 'c1'])
-df_angles = pd.DataFrame(parsed_data.get('angles', []), columns=['ai', 'aj', 'ak', 'funct', 'c0', 'c1'])
-df_pairs = pd.DataFrame(parsed_data.get('pairs', []), columns=['ai', 'aj', 'funct'])
+
+#df_atomtypes = pd.DataFrame(ITP.get('atomtypes', []), columns=['type', 'type_name', 'mass', 'charge', 'element', 'sigma', 'epsilon'])
+df_moleculetype = ITP["moleculetype"]
+df_atoms = ITP["atoms"]
+df_bonds = ITP["bond"]
+df_angles = ITP["angle"]
+df_pairs = ITP["extra LJ or Coulomb1"] or ITP["extra LJ or Coulomb2"]
 
 df_atoms = update_nmer_using_graph(df_atoms, df_bonds, dihedral_centers)
-
+exit(0)
 # Print the DataFrames
 print("DataFrame df_atomtypes:")
-print(df_atomtypes)
+
 
 print("\nDataFrame df_moleculetype:")
 print(df_moleculetype)
@@ -122,10 +74,10 @@ print("\nDataFrame df_pairs:")
 print(df_pairs)
 
 print("\nDataFrame df_improper:")
-print(df_improper)
+print(improper_dihedral)
 
 print("\nDataFrame df_proper:")
-print(df_proper)
+print(proper_dihedral)
 
  
 def assign_nmer_columns(df_atoms, df_bonds, df_angles, df_improper, df_proper):
@@ -170,7 +122,7 @@ print(df_atoms)
 print("\nSample df_bonds before mapping:")
 print(df_bonds)
 
-df_bonds, df_angles, df_improper, df_proper = assign_nmer_columns(df_atoms, df_bonds, df_angles, df_improper, df_proper)
+df_bonds, df_angles, improper_dihedral, proper_dihedral = assign_nmer_columns(df_atoms, df_bonds, df_angles, improper_dihedral, proper_dihedral)
 
 print("\nSample df_bonds after mapping:")
 print(df_bonds)
@@ -179,10 +131,10 @@ print("\nSample df_angles after mapping:")
 print(df_angles)
 
 print("\nSample df_improper after mapping:")
-print(df_improper)
+print(improper_dihedral)
 
 print("\nSample df_proper after mapping:")
-print(df_proper)
+print(proper_dihedral)
  
 def filter_nmer(df_atoms, df_bonds, df_angles, df_improper, df_proper, nmer_value=2):
     df_atoms_mm = df_atoms[df_atoms['nmer'] == nmer_value].copy()
@@ -239,7 +191,7 @@ def adjust_mm_dataframes(df_atoms_mm, df_bonds_mm, df_angles_mm, df_improper_mm,
     return df_atoms_mm, df_bonds_mm, df_angles_mm, df_improper_mm, df_proper_mm
 
 # Example usage:
-df_atoms_mm, df_bonds_mm, df_angles_mm, df_improper_mm, df_proper_mm = filter_nmer(df_atoms, df_bonds, df_angles, df_improper, df_proper)
+df_atoms_mm, df_bonds_mm, df_angles_mm, df_improper_mm, df_proper_mm = filter_nmer(df_atoms, df_bonds, df_angles, improper_dihedral, proper_dihedral)
 df_atoms_mm, df_bonds_mm, df_angles_mm, df_improper_mm, df_proper_mm = adjust_mm_dataframes(
     df_atoms_mm, df_bonds_mm, df_angles_mm, df_improper_mm, df_proper_mm
 )
@@ -272,8 +224,8 @@ def filter_nmer(df_atoms, df_bonds, df_angles, df_improper, df_proper, nmer_valu
     return df_atoms_start, df_bonds_start, df_angles_start, df_improper_start, df_proper_start
 
 # Example usage:
-df_atoms_start, df_bonds_start, df_angles_start, df_improper_start, df_proper_start = filter_nmer(df_atoms, df_bonds, df_angles, df_improper, df_proper)
-df_atoms_end, df_bonds_end, df_angles_end, df_improper_end, df_proper_end = filter_nmer(df_atoms, df_bonds, df_angles, df_improper, df_proper, nmer_value=3)
+df_atoms_start, df_bonds_start, df_angles_start, df_improper_start, df_proper_start = filter_nmer(df_atoms, df_bonds, df_angles, improper_dihedral, proper_dihedral)
+df_atoms_end, df_bonds_end, df_angles_end, df_improper_end, df_proper_end = filter_nmer(df_atoms, df_bonds, df_angles, improper_dihedral, proper_dihedral, nmer_value=3)
 
 print(df_atoms_start)
 print(df_bonds_start)
