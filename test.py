@@ -7,11 +7,13 @@ itp = Itp_parser(File="polymer.itp")
 # Will print out what sections are in the itp
 print(itp)
 # Outputs the data of that sections minus comments
+itp["moleculetype"] = [str(i) for i in range(10)]
 print(itp["moleculetype"])
 # Outputs the data of that section plus comments
 print(itp.raw("moleculetype"))
 # Setting the variable to the data from that section
 moleculetype = itp["moleculetype"]
+
 # Adding to the data in the section, you can add whatever, i just chose to duplicate the data
 itp.add_to_section("moleculetype",moleculetype)
 print(itp["moleculetype"])
