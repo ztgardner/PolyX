@@ -166,8 +166,8 @@ class Itp_parser:
             list: The list of pure data lines for the specified section.
         """
         key = i
-        if key in self.sections_to_pure_data_dic:
-            return self.sections_to_pure_data_dic[key]
+        if key in self.sections:
+            return self.DF[key]
         else:
             return None
 
@@ -179,7 +179,7 @@ class Itp_parser:
         """
         return len(self.sections)
 
-    def __setitem__(self, i: str, j: list):
+    def __setitem__(self, i: str, j: dict):
         """
         Sets the pure data for a given section.
 
@@ -188,7 +188,12 @@ class Itp_parser:
             j (list): The list of pure data lines to set for the section.
         """
         key = i
-        self.sections_to_pure_data_dic[key] = j
+        self.DF[key] = j
+
+
+    def __iter__(self):
+        for key,val in self.DF.items():
+            yield key, val
 
     def raw(self, section) -> list:
         """
@@ -324,14 +329,20 @@ class Itp_parser:
             Temp_key = section + f"&{randint(1,1000000)}"
             keys.append(Temp_key)
             self.sections_to_data_dic[Temp_key] = []
+            times_iterated=0
             for line in file_lines:
+                times_iterated += 1
                 if line.strip() in sections and not First:
+                    if not self.sections_to_data_dic[Temp_key]:
+                        raise(ValueError(f"section is empty{Temp_key}, line: {times_iterated}"))
+
                     Done = True
+                    First = True
                 if Found and not Done:
                     self.sections_to_data_dic[Temp_key].append(line)
                 if section in line:
                     Found = True
-                First = False
+                    First = False
         self.sections = tuple(keys)
 
     def _clean_data(self):
@@ -364,8 +375,8 @@ class Itp_parser:
 
     def _match_tempsection_to_proper_section(self):
         sections = []
-
         for i, j in self.sections_to_pure_data_dic.items():
+
             rud_directive = i.split("&")[0]
             directive = rud_directive[1 : len(rud_directive) - 1].strip().upper()
             if directive in self.TOTAL_DIRECTIVES.keys():
@@ -413,8 +424,8 @@ class Itp_parser:
                                 spliter.append(lines.split())
                     data_for_moletype = {
                         "top_comment": top_comment,
-                        "ResidueName": [spliter[0][0]],
-                        "nrexcl": [spliter[0][1]],
+                        "ResidueName": [[spliter[0][0]]],
+                        "nrexcl": [[spliter[0][1]]],
                         "comments": [spliter[0][2:]],
                         "bottom_comment": bottom_comment,
                     }
@@ -437,15 +448,15 @@ class Itp_parser:
                                 slipters.append(lines.split())
                     to_add = {
                         "Comments_top": top_comment,
-                        "atoms": [slip[0] for slip in slipters],
-                        "atom_types": [slip[1] for slip in slipters],
-                        "resodue#": [slip[2] for slip in slipters],
-                        "residue_name": [slip[3] for slip in slipters],
-                        "atom_name": [slip[4] for slip in slipters],
-                        "chargeGroups#": [slip[5] for slip in slipters],
-                        "charge": [slip[6] for slip in slipters],
+                        "atoms": [[slip[0] for slip in slipters]],
+                        "atom_types": [[slip[1] for slip in slipters]],
+                        "resodue#": [[slip[2] for slip in slipters]],
+                        "residue_name": [[slip[3] for slip in slipters]],
+                        "atom_name": [[slip[4] for slip in slipters]],
+                        "chargeGroups#": [[slip[5] for slip in slipters]],
+                        "charge": [[slip[6] for slip in slipters]],
                         "mass": [[slip[7] for slip in slipters]],
-                        "comments": ["".join(slip[8:]) if len(slip)>8 else ""for slip in slipters ],
+                        "comments": [["".join(slip[8:]) if len(slip)>8 else ""for slip in slipters ]],
                         "Coments_bottom": bottom_comment,
                     }
                     Dataframe_dic[sections] = to_add
