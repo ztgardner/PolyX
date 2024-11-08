@@ -1,6 +1,9 @@
 import os
 from random import randint
 
+from fontTools.afmLib import writelines
+from scipy.stats import vonmises_line
+
 
 class Itp_parser:
     """
@@ -58,17 +61,15 @@ class Itp_parser:
         "restricted bending potential": (3, 10, 2, 5),
     }
     EXCLUSIONS = {
-        "exclusions": (1, None, 1),
+        "exclusions": (1, 0, 1, 0),
     }
     CONSTRAINTS = {
         "constraints1": (2, 1, 1, 4),
         "constraints2": (2, 2, 1, 4),
     }
-    SETTLE = {
-        "SETTLE": (1,1,None,None)
-    }
+    SETTLE = {"SETTLE": (1, 1, 0, 0)}
     VIRTUAL_SITES1 = {
-        "1-body virtual site": (2, 1,None,None),
+        "1-body virtual site": (2, 1, 0, 3),
     }
     VIRTUAL_SITES2 = {
         "2-body virtual site": (3, 1, 2, 5),
@@ -82,12 +83,11 @@ class Itp_parser:
     }
     VIRTUAL_SITES4 = {
         "4-body virtual site (fdn)": (5, 2, 2, 8),
-
     }
     VIRTUAL_SITESn = {
-        "N-body virtual site (COG)": (1, 1, None,None),
-        "N-body virtual site (COM)": (1, 2, None,None),
-        "N-body virtual site (COW)": (1, 3, None,None),
+        "N-body virtual site (COG)": (1, 1, 0, 2),
+        "N-body virtual site (COM)": (1, 2, 0, 2),
+        "N-body virtual site (COW)": (1, 3, 0, 2),
     }
     POSITION_RESTRAINT = {
         "position restraint": (1, 1, 1, 3),
@@ -144,6 +144,7 @@ class Itp_parser:
         self._clean_data()
         sections = self._match_tempsection_to_proper_section()
         self.sections = tuple(sections)
+        self.DF = self._make_sections_data_to_df()
 
     def __repr__(self) -> str:
         """
@@ -152,7 +153,7 @@ class Itp_parser:
         Returns:
             str: A string representation of the sections.
         """
-        return str(self.sections)
+        return str(self.DF)
 
     def __getitem__(self, i: str) -> list or None:
         """
@@ -209,12 +210,12 @@ class Itp_parser:
         Args:
             name (str): The name of the file to save the data to.
         """
-        current_itp = self.sections_to_data_dic
         with open(name, "w") as f:
-            for i, j in current_itp.items():
-                f.write(f"[ {i} ]")
+            for i, j in self.DF.items():
+                f.writelines(f"[ {i} ]")
                 f.write("\n")
-                f.writelines(j)
+                for k in j.values():
+                    f.writelines(str(k)+ "\n")
 
     def fill_in_data(self) -> dict:
         """
@@ -232,57 +233,57 @@ class Itp_parser:
             )
         return current_itp
 
-    def set_charge(self, charge_list: list):
-        """
-        Updates the charge values in the 'atoms' section with the provided charge list.
+    # def set_charge(self, charge_list: list):
+    #     """
+    #     Updates the charge values in the 'atoms' section with the provided charge list.
+    #
+    #     Args:
+    #         charge_list (list): A list of new charge values to update.
+    #     """
+    #     key = "atoms"
+    #     index_to_change = len(self.sections_to_pure_data_dic[key][2].split()) - 2
+    #     new_lines = self.set_value(
+    #         self.sections_to_data_dic[key], index_to_change, charge_list
+    #     )
+    #     self.sections_to_data_dic[key] = new_lines
+    #     self._clean_data()
+    #
+    # def add_to_section(self, section: str, extend: list):
+    #     self.sections_to_data_dic[section].extend(extend)
+    #     self._clean_data()
 
-        Args:
-            charge_list (list): A list of new charge values to update.
-        """
-        key = "atoms"
-        index_to_change = len(self.sections_to_pure_data_dic[key][2].split()) - 2
-        new_lines = self.set_value(
-            self.sections_to_data_dic[key], index_to_change, charge_list
-        )
-        self.sections_to_data_dic[key] = new_lines
-        self._clean_data()
-
-    def add_to_section(self, section: str, extend: list):
-        self.sections_to_data_dic[section].extend(extend)
-        self._clean_data()
-
-    @staticmethod
-    def set_value(to_change: list, index_to_change: int, value_to_set: list) -> list:
-        """
-        Updates specific values in a list of strings based on the provided index and new values.
-
-        Args:
-            to_change (list): The list of lines to update.
-            index_to_change (int): The index where the values should be updated.
-            value_to_set (list): The list of new values to set.
-
-        Returns:
-            list: The updated list of lines with new values applied.
-        """
-        new_lines = []
-        for i, j in zip(to_change, value_to_set):
-            if i.strip()[0] == ";":
-                new_lines.append(i)
-            else:
-                words = i.split()
-                len_word = []
-                index = []
-
-                for word in words:
-                    index.append(i.index(word))
-                    len_word.append(len(word))
-                new_line = (
-                    str(i[: index[index_to_change]])
-                    + str(j).rjust(len_word[index_to_change])
-                    + str(i[index[index_to_change] + len_word[index_to_change] :])
-                )
-                new_lines.append(new_line)
-        return new_lines
+    # @staticmethod
+    # def set_value(to_change: list, index_to_change: int, value_to_set: list) -> list:
+    #     """
+    #     Updates specific values in a list of strings based on the provided index and new values.
+    #
+    #     Args:
+    #         to_change (list): The list of lines to update.
+    #         index_to_change (int): The index where the values should be updated.
+    #         value_to_set (list): The list of new values to set.
+    #
+    #     Returns:
+    #         list: The updated list of lines with new values applied.
+    #     """
+    #     new_lines = []
+    #     for i, j in zip(to_change, value_to_set):
+    #         if i.strip()[0] == ";":
+    #             new_lines.append(i)
+    #         else:
+    #             words = i.split()
+    #             len_word = []
+    #             index = []
+    #
+    #             for word in words:
+    #                 index.append(i.index(word))
+    #                 len_word.append(len(word))
+    #             new_line = (
+    #                 str(i[: index[index_to_change]])
+    #                 + str(j).rjust(len_word[index_to_change])
+    #                 + str(i[index[index_to_change] + len_word[index_to_change] :])
+    #             )
+    #             new_lines.append(new_line)
+    #     return new_lines
 
     def _load(self):
         """
@@ -386,3 +387,121 @@ class Itp_parser:
             self.sections_to_pure_data_dic[j] = self.sections_to_pure_data_dic.pop(i)
             self.sections_to_comments[j] = self.sections_to_comments.pop(i)
         return sections
+
+    def _make_sections_data_to_df(self):
+
+        check_if_comment = lambda s: any(i.startswith("#") for i in s)
+        Dataframe_dic = {}
+
+        for sections in self.sections:
+            match sections:
+                case "moleculetype":
+                    spliter = []
+                    sections_data = self.sections_to_data_dic[sections]
+                    top_comment = []
+                    bottom_comment = []
+                    data_found = False
+                    for lines in sections_data:
+                        if lines.startswith(";"):
+                            if data_found:
+                                bottom_comment.append(lines)
+                            else:
+                                top_comment.append(lines)
+                        else:
+                            data_found = True
+                            if len(lines.split()) != 0:
+                                spliter.append(lines.split())
+                    data_for_moletype = {
+                        "top_comment": top_comment,
+                        "ResidueName": [spliter[0][0]],
+                        "nrexcl": [spliter[0][1]],
+                        "comments": [spliter[0][2:]],
+                        "bottom_comment": bottom_comment,
+                    }
+                    Dataframe_dic[sections] = data_for_moletype
+
+                case "atoms":
+                    slipters = []
+                    found_data = False
+                    bottom_comment = []
+                    top_comment = []
+                    for lines in self.sections_to_data_dic[sections]:
+                        if lines.startswith(";"):
+                            if found_data:
+                                bottom_comment.append(lines)
+                            else:
+                                top_comment.append(lines)
+                        else:
+                            found_data = True
+                            if len(lines.split()) != 0:
+                                slipters.append(lines.split())
+                    to_add = {
+                        "Comments_top": top_comment,
+                        "atoms": [slip[0] for slip in slipters],
+                        "atom_types": [slip[1] for slip in slipters],
+                        "resodue#": [slip[2] for slip in slipters],
+                        "residue_name": [slip[3] for slip in slipters],
+                        "atom_name": [slip[4] for slip in slipters],
+                        "chargeGroups#": [slip[5] for slip in slipters],
+                        "charge": [slip[6] for slip in slipters],
+                        "mass": [[slip[7] for slip in slipters]],
+                        "comments": ["".join(slip[8:]) if len(slip)>8 else ""for slip in slipters ],
+                        "Coments_bottom": bottom_comment,
+                    }
+                    Dataframe_dic[sections] = to_add
+
+                case _:
+                    info_aboutsection = None
+
+                    for key, val in self.TOTAL_DIRECTIVES.items():
+                        for sect, stuff in val.items():
+
+                            if sections == sect:
+                                info_aboutsection = stuff
+                                break
+                            if info_aboutsection:
+                                break
+                        if info_aboutsection:
+                            break
+
+                    found_data = False
+                    top_comment = []
+                    bottom_comment = []
+                    current_data = self.sections_to_data_dic[sections]
+                    slipters = []
+
+                    for lines in current_data:
+
+                        a = int(info_aboutsection[0])
+                        d = int(info_aboutsection[3])
+                        if lines.startswith(";"):
+                            if found_data:
+                                bottom_comment.append(lines)
+                            else:
+                                top_comment.append(lines)
+                        else:
+                            found_data = True
+                            slipter = lines.split()
+                            slipters.append(slipter)
+                        to_add = {
+                            "Comments_top": top_comment,
+                            "atoms": [slip[:a] for slip in slipters],
+                            "function_type": [info_aboutsection[1]],
+                            "params": [
+                                [
+                                    (
+                                        slip[a + 1 :]
+                                        if not check_if_comment(slip)
+                                        else slip[a + 1 : d - 1]
+                                    )
+                                    for slip in slipters
+                                ]
+                            ],
+                            "comments": [
+                                "".join(slip[d - 1 :]) if check_if_comment(slip) else ""
+                                for slip in slipters
+                            ],
+                            "Coments_bottom": bottom_comment,
+                        }
+                        Dataframe_dic[sections] = to_add
+        return Dataframe_dic
