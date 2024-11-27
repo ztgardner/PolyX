@@ -136,9 +136,6 @@ class GUI():
             vec = data[1]
             
             self.ax.quiver(start[0], start[1], start[2], vec[0], vec[1], vec[2], color="red", zorder=4)
-
-
-        
         self.canvas.draw()
 
     def on_click(self, event):
@@ -221,13 +218,6 @@ class GUI():
                 
             self.ax.scatter(*self.coordinates[atom], color=self.atom_colors[atom], s=50, zorder=5, marker='o')
 
-            
-           
-        #for index in unique_atoms:
-        #    self.ax.scatter(*self.coordinates[atom_index], color=self.atom_colors[atom_index], s=500, zorder=5, marker='o')
-
-
-        #self.canvas.draw()
 
         """Writing Atom Info Based on Dropdown"""
         
@@ -244,7 +234,32 @@ class GUI():
         for i in atom_info[section]:
             line = f"   {info.sections_to_pure_data_dic[section][i]}"
             self.info_box.insert(tk.END, line)
+        
+        
+        """Plotting Vectors"""
+        if section != "atoms":
+            vectors = []
+            for i in atom_info[section]:
+                #print(info.DF[section]["atoms"][i]) #These are the vectors to make
+                pair = info.DF[section]["atoms"][i]
+                
+                vectors.extend((self.mk_vector(pair)))
+            self.vectors = vectors
+    
+            Entire_itp = True #Set to false if only want to set atoms clicked
+            if Entire_itp:
+                self.plot_atoms_vectors()
+            else:
+                for i in range(len(self.vectors)):
+                    data = self.vectors[i]
+                    start = data[0]
+                    vec = data[1]
+                    self.ax.quiver(start[0], start[1], start[2], vec[0], vec[1], vec[2], color="red", zorder=4)
+                self.canvas.draw()
+            
+            
 
+      
 
     def reset_zoom(self):
         """Reset the zoom/translate features."""
@@ -255,6 +270,7 @@ class GUI():
         self.info_box.delete("1.0", tk.END)
         self.info_box.insert(tk.END, "Returning...")
         self.ax.clear()
+        self.handle_dropdown_selection()
         self.plot_atoms_vectors()
 
     def handle_dropdown_selection(self):
@@ -340,6 +356,27 @@ class GUI():
         Returns:
             np.array: all the vectors ready to draw
         """
+        try: #Need to check the section to draw Virtual Sites
+            selected_option = self.dropdown_var.get()
+        except:
+            selected_option = "bond"
+        
+       
+        
+        if "virtual site" in selected_option: #Virtual Site vectors are plotted diffrent
+            pairs = []
+            for i in range(len(index) - 1):
+                pair = [int(index[i+1]), int(index[0])]
+                pairs.append(pair)
+            vectors = []
+            for pair in pairs:
+                cord_1 = self.coordinates[pair[0]-1]
+                cord_2= self.coordinates[pair[1]-1]
+
+                #print(cord_1,cord_2,cord_2 - cord_1 )
+                vectors.append([cord_1,cord_2 - cord_1])
+            return vectors
+    
         pairs = []
         for i in range(len(index) - 1):
             pair = [int(index[i]), int(index[i+1])]
@@ -419,9 +456,9 @@ if __name__ == "__main__":
     #itp_obj.load_gro("pf6.gro")
     #itp_obj = Itp_parser("tba.itp")
     #itp_obj.load_gro("tba.gro")
-    #itp_obj = Itp_parser("Trimer_topology.itp")
-    #itp_obj.load_gro("Trimer.gro")   
-    itp_obj = Itp_parser("7mer_n.itp")
-    itp_obj.load_gro("7mer_n.gro")   
+    itp_obj = Itp_parser("Trimer_topology.itp")
+    itp_obj.load_gro("Trimer.gro")   
+    #itp_obj = Itp_parser("7mer_n.itp")
+    #itp_obj.load_gro("7mer_n.gro")   
     gui = GUI(root = root,itp_loader_object = itp_obj)
     root.mainloop()
