@@ -514,6 +514,57 @@ class Itp_parser:
         return Dataframe_dic
 
 
+    def load_gro(self, gro_file):
+        if not isinstance(gro_file, str) or not gro_file.endswith(".gro"):
+            raise ValueError("Cordinate File must be a .gro file'")
+        with open(gro_file, "r") as f:
+            gro_lines = f.readlines()
+            cords = []
+            for line_number, line in enumerate(gro_lines):
+                line = line.split()
+                if line_number <= 1 or len(line) < 4:
+                    continue
+                x, y, z = [float(line[3]), float(line[4]), float(line[5])]
+                cords.append([x, y, z])
+        self.coordinates = cords
+        print(f"Loaded Coordinates From {gro_file}")
+
+    def load_pdb(self, pdb_file):
+        if not isinstance(pdb_file, str) or not pdb_file.endswith(".pdb"):
+            raise ValueError("Cordinate File must be a .pdb file'")
+        with open(pdb_file, "r") as f:
+            pdb_lines = f.readlines()
+            cords = []
+            for line_number, line in enumerate(pdb_lines):
+                line = line.split()
+                if line_number <= 4 or len(line) < 4:
+                    print(f"Skipping Line {line} Containing: {line}")
+                    continue
+                x, y, z = [float(line[5]), float(line[6]), float(line[7])]
+                cords.append([x, y, z])
+        self.coordinates = cords
+        print(f"Loaded Coordinates From {pdb_file}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
