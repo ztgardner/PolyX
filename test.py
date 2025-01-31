@@ -3,7 +3,8 @@
 from itp_parser import *
 #
 # Loading in molecule with the path
-itp = Itp_parser(File="polymer.itp")
+itp = Itp_parser(File="tba.itp")
+
 # Will print out what sections are in the itp
 # # Outputs the data of that sections minus comments
 # itp["moleculetype"] = [str(i) for i in range(10)]
@@ -24,8 +25,12 @@ itp = Itp_parser(File="polymer.itp")
 # ]
 # itp.set_charge(new_charge)
 # # Saving itp with new charge
-itp.save_itp("demo2.itp")
+itp.save_itp("third_try_with_write_fucntion.itp")
 
 
 
-
+# a=itp["bond"]
+# b=a["atoms"]
+#
+# if any("1" in entries for entries in b):
+#     print("found")
