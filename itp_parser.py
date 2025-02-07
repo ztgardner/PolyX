@@ -1,8 +1,7 @@
 import os
 from random import randint
 
-from fontTools.afmLib import writelines
-from scipy.stats import vonmises_line
+
 
 
 class Itp_parser:
@@ -18,7 +17,7 @@ class Itp_parser:
         sections_to_pure_data_dic (dict): A dictionary mapping section headers to pure data lines (excluding comments).
 
     """
-
+    # The information is organized as following: (number of atoms, fuc type, number of parameters, total entires-- sum of num atom, number of paramters +1)
     BONDS = {
         "bond": (2, 1, 2, 5),
         "G96 bond": (2, 2, 2, 5),
@@ -216,11 +215,45 @@ class Itp_parser:
             name (str): The name of the file to save the data to.
         """
         with open(name, "w") as f:
-            for i, j in self.DF.items():
-                f.writelines(f"[ {i} ]")
+            f.write("; \n")
+            f.write("; \n")
+            f.write("; \n")
+            f.write(";              An extender, a parser, a website -- are you getting it?????"+"\n")
+            f.write(";                                  ITP made through POLYX"+"\n")
+            f.write("; \n")
+            f.write("; \n")
+            f.write("; \n")
+            f.write(" \n")
+            f.write(" \n")
+
+            for key, data in self.DF.items():
+                f.writelines(f"[ {key} ]")
                 f.write("\n")
-                for k in j.values():
-                    f.writelines(str(k)+ "\n")
+                strings_to_write = None
+                for inside_key,inside_data in data.items():
+
+                    if len(inside_data) > 0:
+                        match inside_key:
+                            case "Comments_top":
+                                for top_coment in inside_data:
+                                    f.writelines(str(top_coment)+"\n")
+                            case "Coments_bottom":
+                                for bottom_coment in inside_data:
+                                    f.writelines(str(bottom_coment)+"\n")
+                            case _:
+                                if not strings_to_write:
+                                    strings_to_write=['' for i in range(len(inside_data))]
+                                for param_data, index in zip(inside_data, range(len(inside_data))):
+                                    current_string=strings_to_write[index]
+                                    current_string+=str(param_data).replace(","," ").strip("[").strip("]").replace("'"," ")
+                                    current_string+=" "
+                                    if "POLYX" in current_string:
+                                        current_string=current_string.replace("POLYX","   ")
+                                    strings_to_write[index]=current_string
+                for i in strings_to_write:
+                    f.write(str(i)+"\n")
+                f.write(" \n")
+
 
     def fill_in_data(self) -> dict:
         """
@@ -238,7 +271,304 @@ class Itp_parser:
             )
         return current_itp
 
-    # def set_charge(self, charge_list: list):
+
+    def _load(self):
+        """
+        Loads the ITP file and extracts lines and section headers. PRIVATE FUNCTION.
+
+        Returns:
+            tuple: A tuple containing a list of file lines and a list of section headers.
+        """
+        file_lines = []
+        sections = []
+        with open(self.load_path, "r") as f:
+            file_lines.extend(f.readlines())
+        for lines in file_lines:
+            if lines.strip():
+                match lines.strip()[0]:
+                    case "[":
+                        sections.append(lines.strip())
+                    case _:
+                        pass
+        return file_lines, sections
+
+    def _extract_data(self, sect, file_lines):
+        """
+        Extracts data for each section from the file lines. PRIVATE FUNCTION.
+
+        Args:
+            sect (list): A list of section headers.
+            file_lines (list): A list of lines from the ITP file.
+        """
+        sections = sect
+        keys = []
+        self.index_reached=0
+
+        for i in range(self.number_of_sections):
+            file_left_to_parse = file_lines[self.index_reached:]
+            section = sections[0]
+            sections.pop(0)
+            Found = False
+            First = True
+            Temp_key = section + f"&{randint(1,1000000)}"
+            keys.append(Temp_key)
+            self.sections_to_data_dic[Temp_key] = []
+            times_iterated=0
+            #print(file_left_to_parse)
+            #print(self.index_reached)
+            for index,line in enumerate(file_left_to_parse):
+                times_iterated += 1
+                if line.strip() in sections and not First:
+                    if not self.sections_to_data_dic[Temp_key]:
+                        raise(ValueError(f"section is empty{Temp_key}, line: {times_iterated}"))
+
+                    First = True
+                    self.index_reached+=times_iterated-1
+                    break
+                if Found:
+                    self.sections_to_data_dic[Temp_key].append(line)
+                if section in line:
+                    #print(f"found {section}")
+
+                    Found = True
+                    First = False
+        self.sections = tuple(keys)
+
+
+    def _clean_data(self):
+        """
+        Cleans up the data by separating comments from pure data. PRIVATE FUNCTION.
+        """
+        for i, j in self.sections_to_data_dic.items():
+            pure_data = []
+            comments = []
+            for lines in j:
+                if lines.strip():
+                    match lines.strip()[0]:
+                        case ";":
+                            comments.append(lines)
+                        case "[":
+                            pass
+                        case _:
+                            pure_data.append(lines)
+            self.sections_to_pure_data_dic[i] = pure_data
+            self.sections_to_comments[i] = comments
+
+    @staticmethod
+    def find_repeating_sections(sections: list) -> list:
+        append = []
+        repeat = []
+        for section in sections:
+            if section not in append:
+                sections.append(section)
+            else:
+                repeat.append(section)
+        return repeat
+
+
+    def _match_tempsection_to_proper_section(self):
+        sections = []
+        for i, j in self.sections_to_pure_data_dic.items():
+
+            rud_directive = i.split("&")[0]
+            directive = rud_directive[1 : len(rud_directive) - 1].strip().upper()
+            if directive in self.TOTAL_DIRECTIVES.keys():
+                directive_info = self.TOTAL_DIRECTIVES[directive]
+                if len(directive_info) != 1 and len(j)!=0:
+
+                    for k, l in directive_info.items():
+                        direc_type = k
+                        number_atoms_in_param = l[0]
+                        check_comment=lambda x: x.startswith(";")
+                        fun_type = j[0].split()[number_atoms_in_param] if len(j[0].split())>=number_atoms_in_param else j[1].split()[number_atoms_in_param]
+                        if int(fun_type) == l[1]:
+                            sections.append(direc_type)
+                            break
+                else:
+                    sections.append(directive.lower())
+            else:
+                sections.append(directive.lower())
+        for i, j in zip(self.sections, sections):
+            self.sections_to_data_dic[j] = self.sections_to_data_dic.pop(i)
+            self.sections_to_pure_data_dic[j] = self.sections_to_pure_data_dic.pop(i)
+            self.sections_to_comments[j] = self.sections_to_comments.pop(i)
+        return sections
+
+    def _make_sections_data_to_df(self):
+
+        check_if_comment = lambda s: any(i.startswith("#") for i in s)
+        Dataframe_dic = {}
+
+        for sections in self.sections:
+            match sections:
+                case "moleculetype":
+                    spliter = []
+                    sections_data = self.sections_to_data_dic[sections]
+                    top_comment = []
+                    bottom_comment = []
+                    data_found = False
+                    for lines in sections_data:
+                        if lines.startswith(";"):
+                            if data_found:
+                                bottom_comment.append(lines)
+                            else:
+                                top_comment.append(lines)
+                        else:
+                            data_found = True
+                            if len(lines.split()) != 0:
+                                spliter.append(lines.split())
+                    data_for_moletype = {
+                        "Comments_top": top_comment,
+                        "ResidueName": [[spliter[0][0]]],
+                        "nrexcl": [[spliter[0][1]]],
+                        "comments": [spliter[0][2:]],
+                        "Coments_bottom": bottom_comment,
+                    }
+                    Dataframe_dic[sections] = data_for_moletype
+
+                case "atoms":
+                    slipters = []
+                    found_data = False
+                    bottom_comment = []
+                    top_comment = []
+                    for lines in self.sections_to_data_dic[sections]:
+                        if lines.startswith(";"):
+                            if found_data:
+                                bottom_comment.append(lines)
+                            else:
+                                top_comment.append(lines)
+                        else:
+                            found_data = True
+                            if len(lines.split()) != 0:
+                                slipters.append(lines.split())
+                    to_add = {
+                        "Comments_top": top_comment,
+                        "atoms": [[slip[0]] if len(slip)>0 else ["POLYX"] for slip in slipters],
+                        "atom_types": [[slip[1]] if len(slip)>1 else ["POLYX"] for slip in slipters],
+                        "resodue#": [[slip[2]] if len(slip)>2 else ["POLYX"] for slip in slipters],
+                        "residue_name": [[slip[3]] if len(slip)>3 else ["POLYX"] for slip in slipters],
+                        "atom_name": [[slip[4]] if len(slip)>4 else ["POLYX"] for slip in slipters],
+                        "chargeGroups#": [[slip[5]] if len(slip)>5 else ["POLYX"] for slip in slipters],
+                        "charge": [[slip[6]] if len(slip)>6 else ["POLYX"] for slip in slipters],
+                        "mass": [[slip[7]] if len(slip)>7 else ["POLYX"] for slip in slipters],
+                        "comments": [["".join(slip[8:])] if len(slip)>8 else ""for slip in slipters ],
+                        "Coments_bottom": bottom_comment,
+                    }
+                    Dataframe_dic[sections] = to_add
+
+                case _:
+                    info_aboutsection = None
+
+                    for key, val in self.TOTAL_DIRECTIVES.items():
+                        for sect, stuff in val.items():
+
+                            if sections == sect:
+                                info_aboutsection = stuff
+                                break
+                            if info_aboutsection:
+                                break
+                        if info_aboutsection:
+                            break
+
+                    found_data = False
+                    top_comment = []
+                    bottom_comment = []
+                    current_data = self.sections_to_data_dic[sections]
+                    slipters = []
+
+                    for lines in current_data:
+                        if info_aboutsection:
+                            a = int(info_aboutsection[0])
+                            d = int(info_aboutsection[3])
+                            if lines.startswith(";"):
+                                if found_data:
+                                    bottom_comment.append(lines)
+                                else:
+                                    top_comment.append(lines)
+                            else:
+                                found_data = True
+                                slipter = lines.split()
+                                slipters.append(slipter)
+                            to_add = {
+                                "Comments_top": top_comment,
+                                "atoms": [slip[:a] for slip in slipters],
+                                "function_type": [[str(info_aboutsection[1])] for _ in range(len(slipters)-1)],
+                                "params": [
+
+                                        (
+                                            slip[a + 1 :]
+                                            if not check_if_comment(slip)
+                                            else slip[a + 1 : d - 1]
+                                        )
+                                        for slip in slipters
+
+                                ],
+                                "comments": [
+                                    "".join(slip[d - 1 :]) if check_if_comment(slip) else ""
+                                    for slip in slipters
+                                ],
+                                "Coments_bottom": bottom_comment,
+                            }
+                            Dataframe_dic[sections] = to_add
+        return Dataframe_dic
+
+
+    def load_gro(self, gro_file):
+        if not isinstance(gro_file, str) or not gro_file.endswith(".gro"):
+            raise ValueError("Cordinate File must be a .gro file'")
+        with open(gro_file, "r") as f:
+            gro_lines = f.readlines()
+            cords = []
+            for line_number, line in enumerate(gro_lines):
+                line = line.split()
+                if line_number <= 1 or len(line) < 4:
+                    continue
+                x, y, z = [float(line[3]), float(line[4]), float(line[5])]
+                cords.append([x, y, z])
+        self.coordinates = cords
+        print(f"Loaded Coordinates From {gro_file}")
+
+    def load_pdb(self, pdb_file):
+        if not isinstance(pdb_file, str) or not pdb_file.endswith(".pdb"):
+            raise ValueError("Cordinate File must be a .pdb file'")
+        with open(pdb_file, "r") as f:
+            pdb_lines = f.readlines()
+            cords = []
+            for line_number, line in enumerate(pdb_lines):
+                line = line.split()
+                if line_number <= 4 or len(line) < 4:
+                    print(f"Skipping Line {line} Containing: {line}")
+                    continue
+                x, y, z = [float(line[5]), float(line[6]), float(line[7])]
+                cords.append([x, y, z])
+        self.coordinates = cords
+        print(f"Loaded Coordinates From {pdb_file}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#########OLD FUCTIONS curtely not in use################
+ # def set_charge(self, charge_list: list):
     #     """
     #     Updates the charge values in the 'atoms' section with the provided charge list.
     #
@@ -290,245 +620,3 @@ class Itp_parser:
     #             new_lines.append(new_line)
     #     return new_lines
 
-    def load_gro(self,gro_file) -> list:
-        if not isinstance(gro_file, str) or not gro_file.endswith(".gro"):
-            raise ValueError("Cordinate File must be a .gro file'")
-        with open(gro_file, "r") as f:
-            gro_lines = f.readlines()
-            cords = []
-            for line_number, line in enumerate(gro_lines):
-                line = line.split()
-                if line_number <= 1 or len(line) < 4:
-                    continue
-                x,y,z = [float(line[3]), float(line[4]), float(line[5])]
-                cords.append([x,y,z])
-        self.coordinates = cords
-        print(f"Loaded Coordinates From {gro_file}".format(gro_file))
-        #return(cords)
-
-    def _load(self):
-        """
-        Loads the ITP file and extracts lines and section headers. PRIVATE FUNCTION.
-
-        Returns:
-            tuple: A tuple containing a list of file lines and a list of section headers.
-        """
-        file_lines = []
-        sections = []
-        with open(self.load_path, "r") as f:
-            file_lines.extend(f.readlines())
-        for lines in file_lines:
-            if lines.strip():
-                match lines.strip()[0]:
-                    case "[":
-                        sections.append(lines.strip())
-                    case _:
-                        pass
-        return file_lines, sections
-
-    def _extract_data(self, sect, file_lines):
-        """
-        Extracts data for each section from the file lines. PRIVATE FUNCTION.
-
-        Args:
-            sect (list): A list of section headers.
-            file_lines (list): A list of lines from the ITP file.
-        """
-        sections = sect
-        keys = []
-        for i in range(self.number_of_sections):
-            section = sections[0]
-            sections.pop(0)
-            Found = False
-            Done = False
-            First = True
-            Temp_key = section + f"&{randint(1,1000000)}"
-            keys.append(Temp_key)
-            self.sections_to_data_dic[Temp_key] = []
-            times_iterated=0
-            for line in file_lines:
-                times_iterated += 1
-                if line.strip() in sections and not First:
-                    if not self.sections_to_data_dic[Temp_key]:
-                        raise(ValueError(f"section is empty{Temp_key}, line: {times_iterated}"))
-
-                    Done = True
-                    First = True
-                if Found and not Done:
-                    self.sections_to_data_dic[Temp_key].append(line)
-                if section in line:
-                    Found = True
-                    First = False
-        self.sections = tuple(keys)
-
-    def _clean_data(self):
-        """
-        Cleans up the data by separating comments from pure data. PRIVATE FUNCTION.
-        """
-        for i, j in self.sections_to_data_dic.items():
-            pure_data = []
-            comments = []
-            for lines in j:
-                if lines.strip():
-                    match lines.strip()[0]:
-                        case ";":
-                            comments.append(lines)
-                        case _:
-                            pure_data.append(lines)
-            self.sections_to_pure_data_dic[i] = pure_data
-            self.sections_to_comments[i] = comments
-
-    @staticmethod
-    def find_repeating_sections(sections: list) -> list:
-        append = []
-        repeat = []
-        for section in sections:
-            if section not in append:
-                sections.append(section)
-            else:
-                repeat.append(section)
-        return repeat
-
-    def _match_tempsection_to_proper_section(self):
-        sections = []
-        for i, j in self.sections_to_pure_data_dic.items():
-
-            rud_directive = i.split("&")[0]
-            directive = rud_directive[1 : len(rud_directive) - 1].strip().upper()
-            if directive in self.TOTAL_DIRECTIVES.keys():
-                directive_info = self.TOTAL_DIRECTIVES[directive]
-                if len(directive_info) != 1:
-                    for k, l in directive_info.items():
-                        direc_type = k
-                        number_atoms_in_param = l[0]
-                        fun_type = j[0].split()[number_atoms_in_param]
-                        if int(fun_type) == l[1]:
-                            sections.append(direc_type)
-                            break
-                else:
-                    sections.append(directive.lower())
-            else:
-                sections.append(directive.lower())
-        for i, j in zip(self.sections, sections):
-            self.sections_to_data_dic[j] = self.sections_to_data_dic.pop(i)
-            self.sections_to_pure_data_dic[j] = self.sections_to_pure_data_dic.pop(i)
-            self.sections_to_comments[j] = self.sections_to_comments.pop(i)
-        return sections
-
-    def _make_sections_data_to_df(self):
-
-        check_if_comment = lambda s: any(i.startswith("#") for i in s)
-        Dataframe_dic = {}
-
-        for sections in self.sections:
-            match sections:
-                case "moleculetype":
-                    spliter = []
-                    sections_data = self.sections_to_data_dic[sections]
-                    top_comment = []
-                    bottom_comment = []
-                    data_found = False
-                    for lines in sections_data:
-                        if lines.startswith(";"):
-                            if data_found:
-                                bottom_comment.append(lines)
-                            else:
-                                top_comment.append(lines)
-                        else:
-                            data_found = True
-                            if len(lines.split()) != 0:
-                                spliter.append(lines.split())
-                    data_for_moletype = {
-                        "top_comment": top_comment,
-                        "ResidueName": [[spliter[0][0]]],
-                        "nrexcl": [[spliter[0][1]]],
-                        "comments": [spliter[0][2:]],
-                        "bottom_comment": bottom_comment,
-                    }
-                    Dataframe_dic[sections] = data_for_moletype
-
-                case "atoms":
-                    slipters = []
-                    found_data = False
-                    bottom_comment = []
-                    top_comment = []
-                    for lines in self.sections_to_data_dic[sections]:
-                        if lines.startswith(";"):
-                            if found_data:
-                                bottom_comment.append(lines)
-                            else:
-                                top_comment.append(lines)
-                        else:
-                            found_data = True
-                            if len(lines.split()) != 0:
-                                slipters.append(lines.split())
-                    to_add = {
-                        "Comments_top": top_comment,
-                        "atoms": [[slip[0] for slip in slipters]],
-                        "atom_types": [[slip[1] for slip in slipters]],
-                        "resodue#": [[slip[2] for slip in slipters]],
-                        "residue_name": [[slip[3] for slip in slipters]],
-                        "atom_name": [[slip[4] for slip in slipters]],
-                        "chargeGroups#": [[slip[5] for slip in slipters]],
-                        "charge": [[slip[6] for slip in slipters]],
-                        "mass": [[slip[7] for slip in slipters]],
-                        "comments": [["".join(slip[8:]) if len(slip)>8 else ""for slip in slipters ]],
-                        "Coments_bottom": bottom_comment,
-                    }
-                    Dataframe_dic[sections] = to_add
-
-                case _:
-                    info_aboutsection = None
-
-                    for key, val in self.TOTAL_DIRECTIVES.items():
-                        for sect, stuff in val.items():
-                            
-                            if sections == sect:
-                                info_aboutsection = stuff
-                                break
-                            if info_aboutsection:
-                                break
-                        if info_aboutsection:
-                            break
-
-                    found_data = False
-                    top_comment = []
-                    bottom_comment = []
-                    current_data = self.sections_to_data_dic[sections]
-                    slipters = []
-                    
-                    for lines in current_data:
-                        
-                        a = int(info_aboutsection[0])
-                        d = int(info_aboutsection[3])
-                        if lines.startswith(";"):
-                            if found_data:
-                                bottom_comment.append(lines)
-                            else:
-                                top_comment.append(lines)
-                        else:
-                            found_data = True
-                            slipter = lines.split()
-                            slipters.append(slipter)
-                        to_add = {
-                            "Comments_top": top_comment,
-                            "atoms": [slip[:a] for slip in slipters],
-                            "function_type": [info_aboutsection[1]],
-                            "params": [
-                                [
-                                    (
-                                        slip[a + 1 :]
-                                        if not check_if_comment(slip)
-                                        else slip[a + 1 : d - 1]
-                                    )
-                                    for slip in slipters
-                                ]
-                            ],
-                            "comments": [
-                                "".join(slip[d - 1 :]) if check_if_comment(slip) else ""
-                                for slip in slipters
-                            ],
-                            "Coments_bottom": bottom_comment,
-                        }
-                        Dataframe_dic[sections] = to_add
-        return Dataframe_dic
