@@ -29,8 +29,11 @@ class GUI():
 
             
             self.coordinates = np.array(itp_obj.coordinates)  # 3D coordinates
-            self.atom_types = self.itp_currently_shown.DF["atoms"]['atom_name'][0] #The atom types in the same order as the plotted cords
+            self.atom_types = self.itp_currently_shown.DF["atoms"]['atom_name'] #The atom types in the same order as the plotted cords
+            
+            #print(self.atom_types)
             self.atom_colors = [self.atom_type_to_color(type) for type in self.atom_types]
+            
             
             
             self.vectors = self.section_to_vectors() # 3D vectors
@@ -203,6 +206,7 @@ class GUI():
         
         
         relavent_atoms = self.itp_currently_shown.DF[section]["atoms"]
+        
         unique_atoms = []
         for l in relavent_atoms:
             if str(atom_index + 1) in l: #Adding one to be on the same  index as itp
@@ -414,13 +418,14 @@ class GUI():
     ################################################################
         
     def atom_type_to_color(self,atom_type):
+        atom_type = atom_type[0]
         """
         Converts an atom type into a RGB color.
         """
         if len(atom_type) > 1:
             atom_type = atom_type[0] #Going to take the first letter of every atom type to get color
 
-
+        
         atom_colors_rgba = {
     "H": (1.0, 0, 1.0, 1.0), "C": (0.0, 0.0, 0.0, 1.0), "N": (0.0, 0.0, 1.0, 1.0), "O": (1.0, 0.0, 0.0, 1.0),
     "S": (1.0, 1.0, 0.0, 1.0), "P": (1.0, 0.647, 0.0, 1.0), "F": (0.565, 0.933, 0.565, 1.0), "Cl": (0.0, 1.0, 0.0, 1.0),
@@ -459,6 +464,8 @@ if __name__ == "__main__":
     itp_obj = Itp_parser("Trimer_topology.itp")
     itp_obj.load_gro("Trimer.gro")   
     #itp_obj = Itp_parser("7mer_n.itp")
-    #itp_obj.load_gro("7mer_n.gro")   
+    #tp_obj.load_gro("7mer_n.gro")
+    #itp_obj = Itp_parser("pbttt_21_0n.itp")
+    #itp_obj.load_gro("pbttt_21.gro")   
     gui = GUI(root = root,itp_loader_object = itp_obj)
     root.mainloop()
