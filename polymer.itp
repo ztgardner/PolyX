@@ -338,6 +338,7 @@
   330    CSC2         1      PHT          CSC2      330            0.000  14.026000
   331    CSC3         1      PHT          CSC3      331            0.000  15.034000
   332    HT           1      PHT          HT        332            0.216  1.008000
+;this hsould e at the bottom
 
 [ bonds ]
 ; Atom1(ai)  Atom2(aj)  FunctionType  Length    Stiffness

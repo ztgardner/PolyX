@@ -4,33 +4,25 @@ from itp_parser import *
 #
 # Loading in molecule with the path
 itp = Itp_parser(File="tba.itp")
+#add comments
+itp.add_to_comments("bond",[' new ','comments bottom'])
+itp.add_to_comments("bond",[' new ','comments bottom'],bottom=True)
+#extends the section wit the new line
+itp["bond"]=['  18     2     1      0.1090 284512.000 ;aasdfas']
 
-# Will print out what sections are in the itp
-# # Outputs the data of that sections minus comments
-# itp["moleculetype"] = [str(i) for i in range(10)]
-# print(itp["moleculetype"])
-# # Outputs the data of that section plus comments
-# print(itp.raw("moleculetype"))
+# # Outputs the data of that sections
+print(itp["moleculetype"])
+
 # # Setting the variable to the data from that section
-# moleculetype = itp["moleculetype"]
+moleculetype = itp["moleculetype"]
 #
 # # Adding to the data in the section, you can add whatever, i just chose to duplicate the data
-# itp.add_to_section("moleculetype",moleculetype)
-# print(itp["moleculetype"])
-# # Saving the itp, it saves the comments in each section too, but all of the comments are put at the top of the section
-# itp.save_itp("demo.itp")
-# # Changing the charges
-# new_charge = [
-#     *range(332),
-# ]
-# itp.set_charge(new_charge)
+print(itp["moleculetype"])
+
 # # Saving itp with new charge
-itp.save_itp("third_try_with_write_fucntion.itp")
+itp.save_itp("new_tba.itp")
 
 
 
-# a=itp["bond"]
-# b=a["atoms"]
-#
-# if any("1" in entries for entries in b):
-#     print("found")
+
+

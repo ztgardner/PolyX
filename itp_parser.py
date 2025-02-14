@@ -66,7 +66,7 @@ class Itp_parser:
         "constraints1": (2, 1, 1, 4),
         "constraints2": (2, 2, 1, 4),
     }
-    SETTLE = {"SETTLE": (1, 1, 0, 0)}
+    SETTLES = {"SETTLE": (1, 1, 0, 0)}
     VIRTUAL_SITES1 = {
         "1-body virtual site": (2, 1, 0, 3),
     }
@@ -111,7 +111,7 @@ class Itp_parser:
         "ANGLES": ANGLES,
         "EXCLUSIONS": EXCLUSIONS,
         "CONSTRAINTS": CONSTRAINTS,
-        "SETTLE": SETTLE,
+        "SETTLE": SETTLES,
         "VIRTUAL_SITES1": VIRTUAL_SITES1,
         "VIRTUAL_SITES2": VIRTUAL_SITES2,
         "VIRTUAL_SITES3": VIRTUAL_SITES3,
@@ -139,6 +139,7 @@ class Itp_parser:
         self.sections_to_comments = {}
         self.number_of_sections = len(self.sections)
         self.sections_to_pure_data_dic = {}
+        self.converte_internal_sections_to_gromacs_sections={"atoms":"atoms","moleculetype":"moleculetype"}
         self._extract_data(sections, file_lines)
         self._clean_data()
         sections = self._match_tempsection_to_proper_section()
@@ -178,7 +179,7 @@ class Itp_parser:
         """
         return len(self.sections)
 
-    def __setitem__(self, i: str, j: dict):
+    def __setitem__(self, i: str, j: list)-> None:
         """
         Sets the pure data for a given section.
 
@@ -186,11 +187,34 @@ class Itp_parser:
             i (str): The name of the section to update.
             j (list): The list of pure data lines to set for the section.
         """
-        key = i
-        self.DF[key] = j
+        internal_section=i
+        info_aboutsection=self.converte_internal_sections_to_gromacs_sections[i][1]
+        splited=[]
+        a = int(info_aboutsection[0])
+        d = int(info_aboutsection[3])
+        for lines in j:
+            splited.append(lines.split())
 
 
-    def __iter__(self):
+        atoms_to_extend=[slip[:a] for slip in splited]
+        params_to_extend=[
+
+                (
+                    slip[a + 1:]
+                    if not self.check_if_comment(slip)
+                    else slip[a + 1: d - 1]
+                )
+                for slip in splited
+
+            ]
+        func_to_extend=[[str(info_aboutsection[1])] for _ in range(len(splited))]
+
+        self.DF[internal_section]["atoms"].extend(atoms_to_extend)
+        self.DF[internal_section]["params"].extend(params_to_extend)
+        self.DF[internal_section]["function_type"].extend(func_to_extend)
+
+
+    def __iter__(self)-> None:
         for key,val in self.DF.items():
             yield key, val
 
@@ -207,7 +231,7 @@ class Itp_parser:
         key = section
         return self.sections_to_data_dic[key]
 
-    def save_itp(self, name: str):
+    def save_itp(self, name: str)-> None:
         """
         Saves the current state of the ITP data to a file.
 
@@ -227,11 +251,19 @@ class Itp_parser:
             f.write(" \n")
 
             for key, data in self.DF.items():
-                f.writelines(f"[ {key} ]")
-                f.write("\n")
-                strings_to_write = None
-                for inside_key,inside_data in data.items():
+                section_as_a_string=str(key).replace("[ ", "").replace("]","").strip()
+                match section_as_a_string:
+                    case "moleculetype" |"atoms":
+                        f.writelines(f"[ {key} ]")
+                        f.write("\n")
+                    case _:
+                        actual_section=self.find_topology_section(key)
+                        f.writelines(f"{actual_section}")
+                        f.write("\n")
 
+                strings_to_write = None
+                bottom_coments=[]
+                for inside_key,inside_data in data.items():
                     if len(inside_data) > 0:
                         match inside_key:
                             case "Comments_top":
@@ -239,19 +271,21 @@ class Itp_parser:
                                     f.writelines(str(top_coment)+"\n")
                             case "Coments_bottom":
                                 for bottom_coment in inside_data:
-                                    f.writelines(str(bottom_coment)+"\n")
+                                    bottom_coments.append(str(bottom_coment))
                             case _:
                                 if not strings_to_write:
                                     strings_to_write=['' for i in range(len(inside_data))]
                                 for param_data, index in zip(inside_data, range(len(inside_data))):
                                     current_string=strings_to_write[index]
-                                    current_string+=str(param_data).replace(","," ").strip("[").strip("]").replace("'"," ")
+                                    current_string+=str(param_data).replace(","," ").strip("[").strip("]").replace("'"," ").center(10)
                                     current_string+=" "
                                     if "POLYX" in current_string:
                                         current_string=current_string.replace("POLYX","   ")
                                     strings_to_write[index]=current_string
                 for i in strings_to_write:
                     f.write(str(i)+"\n")
+                for bottom_coment in bottom_coments:
+                    f.write(str(bottom_coment)+"\n")
                 f.write(" \n")
 
 
@@ -272,7 +306,7 @@ class Itp_parser:
         return current_itp
 
 
-    def _load(self):
+    def _load(self)-> tuple:
         """
         Loads the ITP file and extracts lines and section headers. PRIVATE FUNCTION.
 
@@ -292,7 +326,7 @@ class Itp_parser:
                         pass
         return file_lines, sections
 
-    def _extract_data(self, sect, file_lines):
+    def _extract_data(self, sect, file_lines) -> None:
         """
         Extracts data for each section from the file lines. PRIVATE FUNCTION.
 
@@ -314,8 +348,6 @@ class Itp_parser:
             keys.append(Temp_key)
             self.sections_to_data_dic[Temp_key] = []
             times_iterated=0
-            print(file_left_to_parse)
-            print(self.index_reached)
             for index,line in enumerate(file_left_to_parse):
                 times_iterated += 1
                 if line.strip() in sections and not First:
@@ -328,15 +360,13 @@ class Itp_parser:
                 if Found:
                     self.sections_to_data_dic[Temp_key].append(line)
                 if section in line:
-                    print(f"found {section}")
 
                     Found = True
                     First = False
         self.sections = tuple(keys)
-        for i in self.sections_to_data_dic.items():
-            print(i)
 
-    def _clean_data(self):
+
+    def _clean_data(self) -> None:
         """
         Cleans up the data by separating comments from pure data. PRIVATE FUNCTION.
         """
@@ -367,7 +397,7 @@ class Itp_parser:
         return repeat
 
 
-    def _match_tempsection_to_proper_section(self):
+    def _match_tempsection_to_proper_section(self) -> list:
         sections = []
         for i, j in self.sections_to_pure_data_dic.items():
 
@@ -380,7 +410,6 @@ class Itp_parser:
                     for k, l in directive_info.items():
                         direc_type = k
                         number_atoms_in_param = l[0]
-                        check_comment=lambda x: x.startswith(";")
                         fun_type = j[0].split()[number_atoms_in_param] if len(j[0].split())>=number_atoms_in_param else j[1].split()[number_atoms_in_param]
                         if int(fun_type) == l[1]:
                             sections.append(direc_type)
@@ -395,9 +424,9 @@ class Itp_parser:
             self.sections_to_comments[j] = self.sections_to_comments.pop(i)
         return sections
 
-    def _make_sections_data_to_df(self):
+    def _make_sections_data_to_df(self)-> dict:
 
-        check_if_comment = lambda s: any(i.startswith("#") for i in s)
+        self.check_if_comment = lambda s: any(i.startswith("#") for i in s)
         Dataframe_dic = {}
 
         for sections in self.sections:
@@ -462,9 +491,9 @@ class Itp_parser:
 
                     for key, val in self.TOTAL_DIRECTIVES.items():
                         for sect, stuff in val.items():
-
                             if sections == sect:
                                 info_aboutsection = stuff
+                                self.converte_internal_sections_to_gromacs_sections[str(sect)] = [str(key).lower(),stuff]
                                 break
                             if info_aboutsection:
                                 break
@@ -489,23 +518,24 @@ class Itp_parser:
                             else:
                                 found_data = True
                                 slipter = lines.split()
-                                slipters.append(slipter)
+                                if len(slipter)>0:
+                                    slipters.append(slipter)
                             to_add = {
                                 "Comments_top": top_comment,
                                 "atoms": [slip[:a] for slip in slipters],
-                                "function_type": [[str(info_aboutsection[1])] for _ in range(len(slipters)-1)],
+                                "function_type": [[str(info_aboutsection[1])] for _ in slipters ],
                                 "params": [
 
                                         (
                                             slip[a + 1 :]
-                                            if not check_if_comment(slip)
+                                            if not self.check_if_comment(slip)
                                             else slip[a + 1 : d - 1]
                                         )
                                         for slip in slipters
 
                                 ],
                                 "comments": [
-                                    "".join(slip[d - 1 :]) if check_if_comment(slip) else ""
+                                    "".join(slip[d - 1 :]) if self.check_if_comment(slip) else ""
                                     for slip in slipters
                                 ],
                                 "Coments_bottom": bottom_comment,
@@ -514,7 +544,7 @@ class Itp_parser:
         return Dataframe_dic
 
 
-    def load_gro(self, gro_file):
+    def load_gro(self, gro_file:str)-> None:
         if not isinstance(gro_file, str) or not gro_file.endswith(".gro"):
             raise ValueError("Cordinate File must be a .gro file'")
         with open(gro_file, "r") as f:
@@ -529,7 +559,7 @@ class Itp_parser:
         self.coordinates = cords
         print(f"Loaded Coordinates From {gro_file}")
 
-    def load_pdb(self, pdb_file):
+    def load_pdb(self, pdb_file:str) -> None:
         if not isinstance(pdb_file, str) or not pdb_file.endswith(".pdb"):
             raise ValueError("Cordinate File must be a .pdb file'")
         with open(pdb_file, "r") as f:
@@ -547,13 +577,18 @@ class Itp_parser:
 
 
 
+    def  find_topology_section(self,name:str)-> str:
+        name=name.replace("["," ").replace("]"," ").strip()
+        for key, inner_dic in self.TOTAL_DIRECTIVES.items():
+            if name in inner_dic.keys():
+                return f"[ {str(key).lower()} ]"
+        raise ValueError(f"Topology section:{name}  does not correspond to an gromacs topology section")
 
 
-
-
-
-
-
+    def add_to_comments(self, section: str, extend: list,bottom: bool=False) -> None:
+        internal_section=section
+        sect="Coments_bottom" if bottom else "Comments_top"
+        self.DF[internal_section][sect].extend(extend)
 
 
 
@@ -569,7 +604,7 @@ class Itp_parser:
 
 
 #########OLD FUCTIONS curtely not in use################
- # def set_charge(self, charge_list: list):
+ #  def set_charge(self, charge_list: list):
     #     """
     #     Updates the charge values in the 'atoms' section with the provided charge list.
     #
@@ -584,9 +619,6 @@ class Itp_parser:
     #     self.sections_to_data_dic[key] = new_lines
     #     self._clean_data()
     #
-    # def add_to_section(self, section: str, extend: list):
-    #     self.sections_to_data_dic[section].extend(extend)
-    #     self._clean_data()
 
     # @staticmethod
     # def set_value(to_change: list, index_to_change: int, value_to_set: list) -> list:
