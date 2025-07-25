@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyX</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_GUI.css') }}">
+    <link rel="icon" type="image/png" href="/static/PolyX_Logo.png">
+
+</head>
+<body>
+    <!-- Nav Bar -->
+    {% include 'navbar.html' %} 
+    <header>
+        GUI
+    </header>
+
+
+    <div id="content-container">
+      <div id="plot-container"></div>
+      <div id="button-container">
+        <textarea id="custom-textbox" rows="17" readonly  wrap="soft" placeholder="Welcome to the PolyX GUI"></textarea>
+        <select class="dropdown"></select>
+
+
+        <button id="file-button" class="action-button" onclick="click_itp()">
+            Load .itp<span id="upload-status-itp"></span>
+        </button>
+        <input type="file" id="itp_input" style="display: none;" accept=".itp" onchange="loadITP()">
+
+        <button id="file-button" class="action-button" onclick="click_gro()">
+            Load .gro<span id="upload-status-gro"></span>
+        </button>
+        <input type="file" id="gro_input" style="display: none;" accept=".gro" onchange="loadGRO()">
+
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/GUI.js') }}"></script>
+</body>
+</html>
