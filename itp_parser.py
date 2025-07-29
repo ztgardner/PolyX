@@ -598,7 +598,7 @@ class Itp_parser:
         Updates the charge values in the 'atoms' section with the provided charge list.
 
         Args:
-            charge_list (str): File path to the file containing the new charges, must be in the same order as the orignal itp.
+            charge_list (str): File path to the file containing the new charges, must be in the same order as the original itp.
         """
         new_charges=[]
 

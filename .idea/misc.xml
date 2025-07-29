@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.12 (billion_mol_db)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (PolyX)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (poly_param)" project-jdk-type="Python SDK" />
 </project>
