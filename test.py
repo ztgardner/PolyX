@@ -18,7 +18,9 @@ moleculetype = itp["moleculetype"]
 #
 # # Adding to the data in the section, you can add whatever, i just chose to duplicate the data
 print(itp["moleculetype"])
-
+print(itp["atoms"]['charge'])
+itp.set_charge("charges")
+print(itp["atoms"]['charge'])
 # # Saving itp with new charge
 itp.save_itp("new_tba.itp")
 

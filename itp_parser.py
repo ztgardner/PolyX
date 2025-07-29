@@ -593,6 +593,26 @@ class Itp_parser:
 
 
 
+    def set_charge(self, charge_list: str):
+        """
+        Updates the charge values in the 'atoms' section with the provided charge list.
+
+        Args:
+            charge_list (str): File path to the file containing the new charges, must be in the same order as the orignal itp.
+        """
+        new_charges=[]
+
+        with open(charge_list, "r") as f:
+            char=f.readlines()
+            for line in char:
+                new_charges.append(float(line))
+        print(f"new charges: {new_charges}")
+        key = "atoms"
+        number_of_atoms=len(self.DF[key]['charge'])
+        if number_of_atoms!=len(new_charges):
+            raise ValueError(f"Number of charge values does not match number of atoms in itp, new_charges {len(new_charges)} number of atoms {number_of_atoms}")
+        for atom_index in range(number_of_atoms):
+            self.DF[key]['charge'][atom_index] = new_charges[atom_index]
 
 
 
@@ -603,7 +623,7 @@ class Itp_parser:
 
 
 
-#########OLD FUCTIONS curtely not in use################
+#########OLD FUCTIONS/ legacy code curtely not in use################
  #  def set_charge(self, charge_list: list):
     #     """
     #     Updates the charge values in the 'atoms' section with the provided charge list.
