@@ -215,7 +215,7 @@ textarea:focus {
     height: 100%;
     background-color: rgba(169, 169, 169, 0.7);
     z-index: -1; /* Place the pseudo-element behind the content (image) */
-    background: url('/static/PE_How2.png') no-repeat center center;
+    background: url('/static/Extend_Help.png') no-repeat center center;
 }
 
 .overlay img {

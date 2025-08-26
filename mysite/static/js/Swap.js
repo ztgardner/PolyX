@@ -99,114 +99,100 @@ function setOptions() {
 }
 
 //Extend Button
-function handleExtendClick() {
-  updateStatusExtend();
-  
-  // Capture values from input fields
-  const dihedral1 = document.getElementById("dihedral1").value
-      .trim()
-      .split(/\s+/)
-      .map(Number);
-  const dihedral2 = document.getElementById("dihedral2").value
-      .trim()
-      .split(/\s+/)
-      .map(Number);
-  const propagation = document.getElementById("propagation").value
-      .trim()
-      .split(/\s+/)
-      .map(Number);
-  const monNum = parseInt(document.getElementById("Mon_num").value - 2); // Changed from repeat middle to number of monomers
+function clickExtend(){
+    document.getElementById('extend-button').addEventListener('click', function() {
+      // Capture values from input fields
+      const dihedral1 = document.getElementById("dihedral1").value
+          .trim()
+          .split(/\s+/)
+          .map(Number);
+      const dihedral2 = document.getElementById("dihedral2").value
+          .trim()
+          .split(/\s+/)
+          .map(Number);
+      const propagation = document.getElementById("propagation").value
+          .trim()
+          .split(/\s+/)
+          .map(Number);
+      const monNum = parseInt(document.getElementById("Mon_num").value);
 
-  const data = {
-      dihedral1: dihedral1,
-      dihedral2: dihedral2,
-      propagation: propagation,
-      Mon_num: monNum,
-      session_id: currentSessionID
-  };
+      const data = {
+          dihedral1: dihedral1,
+          dihedral2: dihedral2,
+          propagation: propagation,
+          Mon_num: monNum
+      };
 
-  // Send data to Flask
-  fetch('/Extend/extend_action', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
-    console.log("✅", data.message);
-    updateStatusExtend(true)
-    const zipFile = data.files.find(name => name.endsWith('.zip'));
-    if (zipFile) {
-    const link = document.createElement("a");
-    link.href = `/Extend/upload/${currentSessionID}/${zipFile}`;
-    link.download = zipFile;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    } 
+      // Send data to Flask
+      fetch('/Extend/extend_action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("✅", data.message);
 
-
-    
-  })
-  .catch((error) => {
-    console.error('❌ Error:', error);
-    updateStatusExtend(false)
-    alert('Extension failed. Check console for details.');
+        if (data.files && Array.isArray(data.files)) {
+          data.files.forEach(filename => {
+            const link = document.createElement("a");
+            link.href = `/Extend/upload/${filename}`;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          });
+        } else {
+          alert("Extension complete, but no files returned.");
+        }
+      })
+      .catch((error) => {
+        console.error('❌ Error:', error);
+        alert('Extension failed. Check console for details.');
+      });
+    });
   }
-
-
-
-);
-}
-
-// Attach event listener once when page loads or script runs
-
 //ITP
 function click_itp(){
     document.getElementById('itp_input').click();
     updateStatusITP("Load")
 }
 
-let currentSessionID = null;
 function loadITP() {
     const file = document.getElementById('itp_input').files[0];  // Corrected file input ID
     if (file) {
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('file', file);
 
-        // Only send session_id if we have one
-        if (currentSessionID !== null) {
-            formData.append('session_id', currentSessionID);
-        }
-
-        fetch('/Extend/upload', {
+        fetch('upload', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => response.text())
         .then(data => {
-            // Save the session_id (first upload wins)
-            if (!currentSessionID) {
-                currentSessionID = data.session_id;
+
+
+            if (data === "Files uploaded successfully" || data === "Please Upload Other File") {
+                updateStatusITP(true);
+            } else {
+                updateStatusITP(false)
             }
 
-            if (data.message && data.message.includes("successfully")) {
-                loadJSON(); // Only run if both files are uploaded
-            } 
-            updateStatusITP(true);
         })
         .catch(error => {
-            console.error('GRO Error:', error);
-            updateStatusITP(false);
+            console.error('ITP Error:', error);
+
+            updateStatusITP(false)
         });
     }
+    loadJSON(); //Trys to load JSON on fileupload
 }
 //GRO
 function click_gro(){
@@ -217,38 +203,34 @@ function click_gro(){
 function loadGRO() {
     const file = document.getElementById('gro_input').files[0];  // Corrected file input ID
     if (file) {
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('file', file);
 
-        // Only send session_id if we have one
-        if (currentSessionID !== null) {
-            formData.append('session_id', currentSessionID);
-        }
-
-        fetch('/Extend/upload', {
+        fetch('upload', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => response.text())
         .then(data => {
-            
-            // Save the session_id (first upload wins)
-            if (!currentSessionID) {
-                currentSessionID = data.session_id;
-            }
+            //console.log(data);
 
-            if (data.message && data.message.includes("successfully")) {
-    
-                loadJSON(); // Only run if both files are uploaded
-            } 
-            updateStatusGRO(true);
+            if (data === "Files uploaded successfully" || data === "Please Upload Other File") {
+
+                updateStatusGRO(true);
+            } else {
+
+                updateStatusGRO(false)
+            }
         })
         .catch(error => {
             console.error('GRO Error:', error);
-            updateStatusGRO(false);
+
+            updateStatusGRO(false)
         });
     }
+    loadJSON(); //Trys to load JSON on fileupload
 }
+
 function loadJSON() {
     //Load JSON into the obejct jsonObject
     //also triggers onJsonUpload()
@@ -257,7 +239,7 @@ function loadJSON() {
 
     if (file_itp && file_gro) {
         // Construct the URL for the JSON file
-        jsonFilename = `/Extend/upload/${currentSessionID}/processed.json`;
+        jsonFilename = 'upload/' + file_itp.name.replace(/\.itp$/, '.json');
         console.log('Fetching:', jsonFilename);
 
         //Backend needs a couple seconds sometimes to generate JSON
@@ -637,20 +619,6 @@ function updateStatusGRO(success) {
 
 //inputs a index or list of indexes, replaces index with corindates of that atom
 
-function updateStatusExtend(success) {
-    const statusElement = document.getElementById('extend-button');
-
-    if (success === true) {
-        statusElement.textContent = '✔'; // Checkmark character
-        statusElement.style.color = 'green';
-    } else if (success === false) {
-        statusElement.textContent = '✘'; // Xmark
-        statusElement.style.color = 'red';
-    } else {
-        statusElement.textContent = '⏳'; // Hourglass character
-        statusElement.style.color = '#0033A0'; // Optional: blue for loading
-    }
-}
 
 
 
@@ -672,12 +640,8 @@ function onFullUpload() {
 
     //Populates plot with ITP data
 
-    const itpFile = document.getElementById('itp_input').files[0];
-    if (itpFile) {
-        layout.title = itpFile.name;
-    } else {
-        layout.title = 'PolyX';
-    }
+    layout.title = jsonFilename.split('/').pop().split('.')[0] //Changes plot title to json name
+
 
     jsonToPoints(jsonObject)
     // Update the Plot

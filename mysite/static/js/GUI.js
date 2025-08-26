@@ -160,74 +160,81 @@ function populateTextbox(custom_string) {
 function click_itp(){
     document.getElementById('itp_input').click();
 }
-
+let currentSessionID = null;
 function loadITP() {
     const file = document.getElementById('itp_input').files[0];  // Corrected file input ID
     if (file) {
-        var formData = new FormData();
+        const formData = new FormData();
         formData.append('file', file);
 
-        fetch('upload', {
+        // Only send session_id if we have one
+        if (currentSessionID !== null) {
+            formData.append('session_id', currentSessionID);
+        }
+
+        fetch('/GUI/upload', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.text())
+        .then(response => response.json())
         .then(data => {
-            //console.log(data);
-            populateTextbox(data);
-
-            if (data === "Files uploaded successfully" || data === "Please Upload Other File") {
-                updateStatusITP(true);
-            } else {
-                updateStatusITP(false)
+            // Save the session_id (first upload wins)
+            if (!currentSessionID) {
+                currentSessionID = data.session_id;
             }
 
+            if (data.message && data.message.includes("successfully")) {
+                loadJSON(); // Only run if both files are uploaded
+            } 
+            updateStatusITP(true);
         })
         .catch(error => {
-            console.error('ITP Error:', error);
-            populateTextbox("ITP Error:" + error);
-            updateStatusITP(false)
+            console.error('GRO Error:', error);
+            updateStatusITP(false);
         });
     }
-    loadJSON(); //Trys to load JSON on fileupload
 }
-
 //GRO
 function click_gro(){
     document.getElementById('gro_input').click();
+    updateStatusGRO("Load")
 }
 
 function loadGRO() {
     const file = document.getElementById('gro_input').files[0];  // Corrected file input ID
     if (file) {
-        var formData = new FormData();
+        const formData = new FormData();
         formData.append('file', file);
 
-        fetch('upload', {
+        // Only send session_id if we have one
+        if (currentSessionID !== null) {
+            formData.append('session_id', currentSessionID);
+        }
+
+        fetch('/GUI/upload', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.text())
+        .then(response => response.json())
         .then(data => {
-            //console.log(data);
-            populateTextbox(data);
-            if (data === "Files uploaded successfully" || data === "Please Upload Other File") {
-
-                updateStatusGRO(true);
-            } else {
-
-                updateStatusGRO(false)
+            
+            // Save the session_id (first upload wins)
+            if (!currentSessionID) {
+                currentSessionID = data.session_id;
             }
+
+            if (data.message && data.message.includes("successfully")) {
+    
+                loadJSON(); // Only run if both files are uploaded
+            } 
+            updateStatusGRO(true);
         })
         .catch(error => {
             console.error('GRO Error:', error);
-            populateTextbox("GRO Error:" + error);
-            updateStatusGRO(false)
+            updateStatusGRO(false);
         });
     }
-    loadJSON(); //Trys to load JSON on fileupload
 }
-
 function loadJSON() {
     //Load JSON into the obejct jsonObject
     //also triggers onJsonUpload()
@@ -236,7 +243,7 @@ function loadJSON() {
 
     if (file_itp && file_gro) {
         // Construct the URL for the JSON file
-        jsonFilename = 'upload/' + file_itp.name.replace(/\.itp$/, '.json');
+        jsonFilename = `/GUI/upload/${currentSessionID}/processed.json`;
         console.log('Fetching:', jsonFilename);
 
         //Backend needs a couple seconds sometimes to generate JSON
@@ -539,23 +546,31 @@ function jsonToPoints(json_data) {
 //Handles Upload Checkmarks
 function updateStatusITP(success) {
     const statusElement = document.getElementById('upload-status-itp');
-    if (success) {
+
+    if (success === true) {
         statusElement.textContent = '✔'; // Checkmark character
         statusElement.style.color = 'green';
-    } else {
-        statusElement.textContent = '✘'; // Cross character for failure
+    } else if (success === false) {
+        statusElement.textContent = '✘'; // Xmark
         statusElement.style.color = 'red';
+    } else {
+        statusElement.textContent = '⏳'; // Hourglass character
+        statusElement.style.color = '#0033A0'; // Optional: blue for loading
     }
 }
 
 function updateStatusGRO(success) {
     const statusElement = document.getElementById('upload-status-gro');
-    if (success) {
+
+    if (success === true) {
         statusElement.textContent = '✔'; // Checkmark character
         statusElement.style.color = 'green';
-    } else {
+    } else if (success === false) {
         statusElement.textContent = '✘'; // Xmark
         statusElement.style.color = 'red';
+    } else {
+        statusElement.textContent = '⏳'; // Hourglass character
+        statusElement.style.color = '#0033A0'; // Optional: blue for loading
     }
 }
 
@@ -582,9 +597,12 @@ function onFullUpload() {
 
     //Populates plot with ITP data
 
-    layout.title = jsonFilename.split('/').pop().split('.')[0] //Changes plot title to json name
-
-
+    const itpFile = document.getElementById('itp_input').files[0];
+    if (itpFile) {
+        layout.title = itpFile.name;
+    } else {
+        layout.title = 'PolyX';
+    }
 
     jsonToPoints(jsonObject)
     // Update the Plot
@@ -609,3 +627,28 @@ function onFullUpload() {
 });
 
 }
+/* HELP ICON */
+// Get the help icon and overlay
+const helpIcon = document.getElementById('help-icon');
+const overlay = document.getElementById('overlay');
+const closeBtn = document.getElementById('close-btn');
+
+// Show overlay when the help icon is clicked
+helpIcon.addEventListener('click', function() {
+    overlay.style.visibility = 'visible';
+});
+
+// Close the overlay when the close button is clicked
+closeBtn.addEventListener('click', function() {
+    overlay.style.visibility = 'hidden';
+});
+
+document.getElementById("help-icon").addEventListener("click", () => {
+    const overlay = document.getElementById("overlay");
+    overlay.classList.add("visible"); // Show overlay
+});
+
+document.getElementById("close-btn").addEventListener("click", () => {
+    const overlay = document.getElementById("overlay");
+    overlay.classList.remove("visible"); // Hide overlay
+});

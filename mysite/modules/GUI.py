@@ -3,64 +3,75 @@ from werkzeug.utils import secure_filename
 import os
 from scripts.itp_parser import Itp_parser
 import json
+import uuid
+import zipfile
+from flask import current_app
 
-#Blueprint
+# Blueprint
 GUI_bp = Blueprint('GUI', __name__, url_prefix='/GUI')
 
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'upload') 
 ALLOWED_EXTENSIONS = {'itp', 'gro'}
 
-
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Create folder if it doesn't exist
-
+def get_session_folder():
+    session_id = str(uuid.uuid4())
+    base_upload = current_app.config['UPLOAD_FOLDER']
+    path = os.path.join(base_upload, 'GUI', session_id)
+    os.makedirs(path, exist_ok=True)
+    return path, session_id
 
 # Define a route for this page
 @GUI_bp.route('/')
 def new_page():
     return render_template('GUI.html')
 
-
-
 # Helper function to check allowed file extensions
 def allowed_file(filename):
-    """Check if the file has an allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @GUI_bp.route('/upload', methods=['POST'])
 def upload_file():
-    """Handle file uploads."""
+    """Handle file uploads with optional session_id from frontend."""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
+
     file = request.files['file']
     if file.filename == '':
-        return 'No selected file', 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
-        result = load_files()  # Process files
-        return result, 200  
-    else:
         return jsonify({'error': 'No selected file'}), 400
-    
 
-@GUI_bp.route('/upload/<filename>', methods=['GET'])
-def serve_file(filename):
-    json_dir = UPLOAD_FOLDER
-    file_path = os.path.join(json_dir, filename)
-    
-    if os.path.exists(file_path):
-        return send_from_directory(json_dir, filename)
+    if file and allowed_file(file.filename):
+        # Accept or generate session ID
+        session_id = request.form.get('session_id')
+        if session_id:
+            upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'GUI', session_id)
+        else:
+            upload_path, session_id = get_session_folder()
+
+        os.makedirs(upload_path, exist_ok=True)
+
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_path, filename)
+        file.save(file_path)
+
+        result = load_files(upload_path)
+
+        return jsonify({
+            'message': result,
+            'session_id': session_id
+        }), 200
     else:
-        print(f"File not found: {file_path}")  # Debugging info
+        return jsonify({'error': 'File not allowed'}), 400
+    
+@GUI_bp.route('/upload/<session_id>/<filename>', methods=['GET'])
+def serve_file(session_id, filename):
+    json_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'GUI', session_id)
+    file_path = os.path.join(json_dir, filename)
+
+    if os.path.exists(file_path):
+        return send_from_directory(json_dir, filename, as_attachment=True)
+    else:
         return jsonify({'error': 'File not found'}), 404
 
-
-
-def load_files():
-    """Process uploaded ITP and GRO files."""
-    directory = UPLOAD_FOLDER
+def load_files(directory):
     gro_file = []
     itp_file = []
 
@@ -72,30 +83,21 @@ def load_files():
             itp_file.append(path)
 
     if len(gro_file) == 0 or len(itp_file) == 0:
-        return 'Please Upload Other File'
+        return 'Please upload both .gro and .itp files'
     elif len(gro_file) > 1 or len(itp_file) > 1:
         print('Warning: multiple files found')
 
     try:
         itp = Itp_parser(itp_file[0])
         itp.load_gro(gro_file[0])
-        for file in itp_file + gro_file:
-            os.remove(file)
 
-        json_file_name = itp_file[0].replace(".itp", ".json")
-        json_string = dict(itp)
-        json_string['coordinates'] = itp.coordinates
-        json_string = json.dumps(json_string)
+        json_file_name = os.path.join(directory, "processed.json")
+        json_data = dict(itp)
+        json_data['coordinates'] = itp.coordinates
+        with open(json_file_name, "w") as f:
+            json.dump(json_data, f, indent=0)
 
-        with open(json_file_name, "w") as file:
-            json.dump(json.loads(json_string), file, indent=0)
-
-
-        return f'Files uploaded successfully'
+        return 'Files uploaded and processed successfully'
     except Exception as e:
         print(e)
         return f'Error loading ITP and GRO to JSON: {str(e)}'
-
-
-
-

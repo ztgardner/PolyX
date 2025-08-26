@@ -1,0 +1,50 @@
+; Adapted from https://doi.org/10.1016/j.molliq.2021.116533
+; validated with viscosity and conductivity calculations (https://doi.org/10.1021/acsaem.2c03712)
+; Anton S. Perera
+
+
+
+[ moleculetype ]
+; Name            nrexcl
+ACN             3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  
+        1  opls_140   1   ACN      H1    1   +0.088     1.008   
+        2  opls_755   1   ACN      C1    1   -0.122    12.011   
+        3  opls_140   1   ACN      H2    1   +0.088     1.008   
+        4  opls_140   1   ACN      H3    1   +0.088     1.008   
+        5  opls_754   1   ACN      C2    2   +0.352     12.011   
+        6  opls_753   1   ACN      N1    2   -0.494    14.0067   
+
+
+
+
+[ bonds ]
+1 2 1   0.109  284512.0
+2 3 1   0.109  284512.0
+2 4 1   0.109  284512.0
+2 5 1   0.146  326352.0
+5 6 1   0.116  543920.0
+
+
+[ angles ]
+1 2 3 1  108.549  276.144
+1 2 4 1  108.549  276.144
+1 2 5 1  110.372  292.880
+2 5 6 1  179.999  1255.200
+3 2 4 1  108.583  276.144
+3 2 5 1  110.365  292.880
+4 2 5 1  110.365  292.880
+
+
+[ dihedrals ]
+1 2 5 6 3       0.000   0.000   0.000  -0.000  -0.000   0.000
+3 2 5 6 3       0.000   0.000   0.000  -0.000  -0.000   0.000
+4 2 5 6 3       0.000   0.000   0.000  -0.000  -0.000   0.000
+
+
+[ pairs ]
+6 1 1
+6 3 1
+6 4 1
