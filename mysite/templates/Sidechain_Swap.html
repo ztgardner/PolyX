@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyX</title>
+    <title>BOBCAT</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style_Swap.css') }}">
-    <link rel="icon" type="image/png" href="/static/PolyX_Logo.png">
+    <link rel="icon" type="image/png" href="/static/BOBCAT_Logo.png">
 
 </head>
 <body>
@@ -28,48 +28,70 @@
     <div id="content-container">
       <div id="plot-container"></div>
 
+      <!-- Load ITP GRO of Trimer -->
       <div id="button-container">
         <div style="display: flex; gap: 1rem; justify-content: center;">
           <div>
             <button id="file-button-itp" class="action-button" onclick="click_itp()">
-              Load .itp<span id="upload-status-itp"></span>
+              Load .itp Trimer<span id="upload-status-itp"></span>
             </button>
             <input type="file" id="itp_input" style="display: none;" accept=".itp" onchange="loadITP()">
           </div>
 
           <div>
             <button id="file-button-gro" class="action-button" onclick="click_gro()">
-              Load .gro<span id="upload-status-gro"></span>
+              Load .gro Trimer<span id="upload-status-gro"></span>
             </button>
             <input type="file" id="gro_input" style="display: none;" accept=".gro" onchange="loadGRO()">
           </div>
         </div>
+      
+        
+        
+      <!--Load ITP GRO of Monomer -->
+      <div id="button-container">
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <div>
+            <button id="file-button-itp_mon" class="action-button" onclick="click_itp_mon()">
+              Load .itp Monomer<span id="upload-status-itp_mon"></span>
+            </button>
+            <input type="file" id="itp_input_mon" style="display: none;" accept=".itp" onchange="loadITP_mon()">
+          </div>
 
+          <div>
+            <button id="file-button-gro_mon" class="action-button" onclick="click_gro_mon()">
+              Load .gro Monomer<span id="upload-status-gro_mon"></span>
+            </button>
+            <input type="file" id="gro_input_mon" style="display: none;" accept=".gro" onchange="loadGRO_mon()">
+          </div>
+        </div>
+      
+        
         
         <select class="dropdown"></select>
         <div style="margin: 1rem auto; width: 70%; max-width: 600px; display: flex; flex-direction: column; gap: 1rem;">
 
         <div class="input-group">
-          <label for="dihedral1">Bridge (Start to Middle):</label>
-          <input id="dihedral1" type="text" maxlength="50" class="dihedral" placeholder="𛲖    𛲖">
+          <label for="sc_1">Monomer To Sidechain Bridge:</label>
+          <input id="sc_1" type="text" maxlength="50" class="dihedral" placeholder="     ">
         </div>
 
         <div class="input-group">
-          <label for="dihedral2">Bridge (Middle to End):</label>
-          <input id="dihedral2" type="text" maxlength="50" class="dihedral" placeholder="𛲖    𛲖">
+          <label for="sc_rep">Trimer To Sidechain Bridges: </label>
+          <input id="sc_rep" type="text" maxlength="50" class="dihedral" placeholder="     ">
         </div>
 
         <div class="input-group">
-          <label for="propagation">Starting & Ending H:</label>
-          <input id="propagation" type="text" maxlength="100" class="propagation" placeholder="𛲖    𛲖">
+          <label for="hs_on_monomer">Starting & Ending H On Monomer:</label>
+          <input id="hs_on_monomer" type="text" maxlength="50" class="propagation" placeholder="     ">
         </div>
 
         <div class="input-group">
-          <label for="Mon_num">Number of Middle Units:</label>
-          <input id="Mon_num" type="text" maxlength="4" class="monomers" placeholder="𛲖">
+          <label for="hs_ontrimer">Starting & Ending H On Trimer:</label>
+          <input id="hs_ontrimer" type="text" maxlength="50" class="propagation" placeholder="     ">
         </div>
 
-        <button id="extend-button" class="action-button" style="margin-top: 1rem;" onclick="clickExtend()">Extend!</button>
+        <button id="swap-button" class="action-button" style="margin-top: 1rem;" onclick="clickSwap()">Swap!</button>
       </div>
     </div>
 

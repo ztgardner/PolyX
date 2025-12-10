@@ -243,7 +243,7 @@ class Itp_parser:
             f.write("; \n")
             f.write("; \n")
             f.write(";              An extender, a parser, a website -- are you getting it?????"+"\n")
-            f.write(";                                  ITP made through POLYX"+"\n")
+            f.write(";                                  ITP made through BOBCAT"+"\n")
             f.write("; \n")
             f.write("; \n")
             f.write("; \n")

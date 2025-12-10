@@ -96,8 +96,8 @@ class POLY_Extend:
             f"{self.Out_Name}.gro",
             coords,
             box,
-            title="GRO made through POLYX",
-            resname="PLYX",
+            title="GRO made through BOBCAT",
+            resname="BOBX",
             atomname="X   ",        # fallback if atomnames=None
             atomnames=atomnames,
             residue_number=1,

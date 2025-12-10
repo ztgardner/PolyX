@@ -6,8 +6,8 @@ import datetime
 # Import Blueprints
 from modules.GUI import GUI_bp
 from modules.Extend import Extend_bp
-from modules.Sidechain_Swap import Sidechain_Swap_bp  # Importing the same blueprint as in Extend.py
-#from modules.image_upload import image_upload_bp
+from modules.Sidechain_Swap import Sidechain_Swap_bp  
+
 
 
 
@@ -18,8 +18,9 @@ def create_app():
     CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, "upload")
+    UPLOAD_FOLDER = os.path.abspath(os.path.join(app.root_path, '..', 'mysite', 'uploads'))
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER

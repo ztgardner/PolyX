@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Welcome To PolyX</title>
+  <title>Welcome To BOBCAT</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style_index.css') }}" />
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='PolyX_Logo.png') }}" />
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='BOBCAT_Logo.png') }}" />
 </head>
 <body>
 
@@ -14,21 +14,35 @@
   {% include 'navbar.html' %}
 
   <!-- HEADER -->
-  <header>PolyX</header>
+  <header>BOBCAT</header>
 
   <!-- HERO SECTION -->
   <div class="hero-section">
-    <img src="{{ url_for('static', filename='GroupPhoto.png') }}" alt="PolyX group photo" class="hero-image" />
-    <div class="hero-text">Welcome to PolyX</div>
+    <img src="{{ url_for('static', filename='GroupPhoto.png') }}" alt="BOBCAT group photo" class="hero-image" />
+    <div class="hero-text">Welcome to BOBCAT</div>
     <button class="scroll-button" onclick="scrollToWhoWeAre()">Learn More ↓</button>
   </div>
+
+<!-- BOBCAT -->
+<div class="w3-container w3-center w3-padding-64" id="who-we-are">
+  <div class="w3-card w3-padding-48 w3-round-xlarge w3-light-grey" style="max-width:800px; margin:auto;">
+    <h2 class="w3-wide" style="font-size: 2.5em; letter-spacing: 2px;">
+      B - Builder for<br>
+      O - Oligomer<br>
+      B - Branching and<br>
+      C - Chain<br>
+      A - Assembly<br>
+      T - Toolkit
+    </h2>
+  </div>
+</div>
 
   <!-- WHO WE ARE -->
   <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:800px" id="who-we-are">
     <h2 class="w3-wide">Who We Are</h2>
     <p class="w3-opacity"><i>The Risko Group</i></p>
     <p>
-      PolyX is designed by computational polymer scientists for
+      BOBCAT is designed by computational polymer scientists for
       computational polymer scientists in search of a scalable,
       intuitive, and adaptable solution for their research. We are
       committed to supporting the community by providing open,
@@ -36,7 +50,7 @@
       simulations. For more information on the Risko group or to
       contact us please visit our
       <a href="https://www.riskolab.org/home" class="group-link" target="_blank">group page</a>.
-      The developers of PolyX are:
+      The developers of BOBCAT are:
     </p>
     <div class="image-container">
       <div class="image-item">
@@ -102,25 +116,30 @@
         <h3>Polymer Extension</h3>
         <p>Turn a trimer into a polymer of any Length!</p>
       </a>
-      <a href="/SideChain-Swap" class="page-item">
+      <a href="/SideChain_Swap" class="page-item">
         <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="SideChain Swap icon" />
         <h3>SideChain Swapper</h3>
         <p>Graft your sidechains onto a similar polymer! - Webpage Under Construction</p>
       </a>
-      <a href="https://github.com/ztgardner/PolyX/blob/main/scripts/itp_parser.py" class="page-item">
+      <a href="https://github.com/ztgardner/BOBCAT/blob/main/scripts/itp_parser.py" class="page-item">
         <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="Trimer Maker icon" />
         <h3>ITP Parser</h3>
         <p>Package that turns any ITP file into a Python Dictonary. Useful for manipulating,editing, and writing ITP files </p>
+      </a>
+      <a href="https://github.com/ztgardner/BOBCAT/tree/nolan/Dh_Scan" class="page-item">
+        <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="DH SCAN icon" />
+        <h3>Dihedral Angle Reparameterization</h3>
+        <p>A package that scans polymer dihedral profiles and reparameterizes them at a higher level of theory to more accurately model polymer flexibility.</p>
       </a>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
-    <h2>PolyX Is Fully Open Source!</h2>
+    <h2>BOBCAT Is Fully Open Source!</h2>
     <p class="w3-opacity">
       <i>For documentation, resources, and code please visit our
-      <a href="https://github.com/ztgardner/PolyX" class="Github-link" target="_blank">GitHub</a>
+      <a href="https://github.com/ztgardner/BOBCAT" class="Github-link" target="_blank">GitHub</a>
       </i>
     </p>
   </footer>
