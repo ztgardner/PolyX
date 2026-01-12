@@ -1,0 +1,157 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome To BOBCAT</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style_index.css') }}" />
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='BOBCAT_Logo.png') }}" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  {% include 'navbar.html' %}
+
+  <!-- HEADER -->
+  <header>BOBCAT</header>
+
+  <!-- HERO SECTION -->
+  <div class="hero-section">
+    <img src="{{ url_for('static', filename='GroupPhoto.png') }}" alt="BOBCAT group photo" class="hero-image" />
+    <div class="hero-text">Welcome to BOBCAT</div>
+    <button class="scroll-button" onclick="scrollToWhoWeAre()">Learn More ↓</button>
+  </div>
+
+<!-- BOBCAT -->
+<div class="w3-container w3-center w3-padding-64" id="who-we-are">
+  <div class="w3-card w3-padding-48 w3-round-xlarge w3-light-grey" style="max-width:800px; margin:auto;">
+    <h2 class="w3-wide" style="font-size: 2.5em; letter-spacing: 2px;">
+      B - Builder for<br>
+      O - Oligomer<br>
+      B - Branching and<br>
+      C - Chain<br>
+      A - Assembly<br>
+      T - Toolkit
+    </h2>
+  </div>
+</div>
+
+  <!-- WHO WE ARE -->
+  <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:800px" id="who-we-are">
+    <h2 class="w3-wide">Who We Are</h2>
+    <p class="w3-opacity"><i>The Risko Group</i></p>
+    <p>
+      BOBCAT is designed by computational polymer scientists for
+      computational polymer scientists in search of a scalable,
+      intuitive, and adaptable solution for their research. We are
+      committed to supporting the community by providing open,
+      efficient, and scientifically rigorous tools for polymer
+      simulations. For more information on the Risko group or to
+      contact us please visit our
+      <a href="https://www.riskolab.org/home" class="group-link" target="_blank">group page</a>.
+      The developers of BOBCAT are:
+    </p>
+    <div class="image-container">
+      <div class="image-item">
+        <img src="{{ url_for('static', filename='Risko.jpg') }}" alt="Dr. Chad Risko portrait"/>
+        <p>Dr. Chad Risko</p>
+      </div>
+    </div>
+    <div class="image-container">
+
+      <div class="image-item">
+        <img src="{{ url_for('static', filename='Joel Bombile.png') }}" alt="Dr. Joel Bombile portrait"/>
+        <p>Dr. Joel Bombile</p>
+      </div>
+      <div class="image-item">
+        <img src="{{ url_for('static', filename='Megan Brown.jpg') }}" alt="Megan R. Brown portrait"/>
+        <p>Megan R. Brown</p>
+      </div>
+      <div class="image-item">
+        <img src="{{ url_for('static', filename='Zach Gardner.png') }}" alt="Zach Gardner portrait"/>
+        <p>Zach Gardner</p>
+      </div>
+      <div class="image-item">
+        <img src="{{ url_for('static', filename='Shasanka Lamichhane.png') }}" alt="Shasanka Lamichhane portrait"/>
+        <p>Shasanka Lamichhane</p>
+      </div>
+      <div class="image-item">
+        <img src="{{ url_for('static', filename='Nolan Lok.JPG') }}" alt="Nolan C. Lok portrait"/>
+        <p>Nolan C. Lok</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISSION STATEMENT -->
+  <section class="mission-statement">
+    <div class="mission-content">
+      <h2>Mission Statement</h2>
+      <p>
+        Our mission is to develop intuitive tools that allow computational
+        chemists to efficiently modify, validate, and visualize molecular
+        dynamics input files for polymer simulations, streamlining workflow
+        and accelerating discovery.
+      </p>
+    </div>
+      <!-- MAP VISITORS CONTAINER -->
+    <script type="text/javascript" id="mapmyvisitors" src="https://mapmyvisitors.com/map.js?cl=ffffff&w=a&t=n&d=xtKpygqPlyZpsW-d-i-d0K5bT9FhJzmDkUE7saamZnc&co=0033a0&cmo=3acc3a&cmn=ff5353&ct=ffffff"></script>
+  </section>
+
+    </section>
+
+
+
+
+  <!-- SUMMARY OF TOOLS -->
+  <section class="pages-overview">
+    <div class="overview-container">
+      <a href="/GUI" class="page-item">
+        <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="GUI icon" />
+        <h3>GUI</h3>
+        <p>Closely inspect your ITP and coordinate files!</p>
+      </a>
+      <a href="/Extend" class="page-item">
+        <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="Polymer Extension icon" />
+        <h3>Polymer Extension</h3>
+        <p>Turn a trimer into a polymer of any Length!</p>
+      </a>
+      <a href="/SideChain_Swap" class="page-item">
+        <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="SideChain Swap icon" />
+        <h3>SideChain Swapper</h3>
+        <p>Graft your sidechains onto a similar polymer! - Webpage Under Construction</p>
+      </a>
+      <a href="https://github.com/ztgardner/BOBCAT/blob/main/scripts/itp_parser.py" class="page-item">
+        <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="Trimer Maker icon" />
+        <h3>ITP Parser</h3>
+        <p>Package that turns any ITP file into a Python Dictonary. Useful for manipulating,editing, and writing ITP files </p>
+      </a>
+      <a href="https://github.com/ztgardner/BOBCAT/tree/nolan/Dh_Scan" class="page-item">
+        <img src="{{ url_for('static', filename='Risko_Group_Logo.png') }}" alt="DH SCAN icon" />
+        <h3>Dihedral Angle Reparameterization</h3>
+        <p>A package that scans polymer dihedral profiles and reparameterizes them at a higher level of theory to more accurately model polymer flexibility.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <h2>BOBCAT Is Fully Open Source!</h2>
+    <p class="w3-opacity">
+      <i>For documentation, resources, and code please visit our
+      <a href="https://github.com/ztgardner/BOBCAT" class="Github-link" target="_blank">GitHub</a>
+      </i>
+    </p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    function scrollToWhoWeAre() {
+      const section = document.getElementById('who-we-are');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  </script>
+
+</html>

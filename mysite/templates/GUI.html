@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOBCAT</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_GUI.css') }}">
+    <link rel="icon" type="image/png" href="/static/BOBCAT_Logo.png">
+
+</head>
+<body>
+    <!-- Nav Bar -->
+    {% include 'navbar.html' %} 
+    <header>
+        GUI
+    </header>
+
+    <!-- Help icon -->
+    <div id="help-icon">?</div>
+    <!-- Full-screen overlay with PNG image -->
+    <div id="overlay" class="overlay">
+        <!-- Close button to hide the overlay -->
+        <div class="close-btn" id="close-btn">&times;</div>
+    </div>
+    
+    <!-- Hidden Map My Visitors Tracker -->
+    <script type="text/javascript" style="display:none;visibility:hidden;width:0;height:0;" src="//mapmyvisitors.com/map.js?d=tPVmfLYQKMxvwsYFx7Qj-VAtapgEWhLIvATLdLc0XJc&cl=ffffff&w=a"></script>
+
+    <div id="content-container">
+      <div id="plot-container"></div>
+      <div id="button-container">
+        <textarea id="custom-textbox" rows="17" readonly  wrap="soft" placeholder="Welcome to the BOBCAT GUI"></textarea>
+        <select class="dropdown"></select>
+
+
+        <button id="file-button" class="action-button" onclick="click_itp()">
+            Load .itp<span id="upload-status-itp"></span>
+        </button>
+        <input type="file" id="itp_input" style="display: none;" accept=".itp" onchange="loadITP()">
+
+        <button id="file-button" class="action-button" onclick="click_gro()">
+            Load .gro<span id="upload-status-gro"></span>
+        </button>
+        <input type="file" id="gro_input" style="display: none;" accept=".gro" onchange="loadGRO()">
+
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/GUI.js') }}"></script>
+</body>
+</html>
